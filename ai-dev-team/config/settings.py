@@ -1,0 +1,31 @@
+"""Single place to tune system behavior without touching agent code."""
+import os
+
+LLM_PROVIDER = os.environ.get("LLM_PROVIDER", "ollama")  # "ollama" | "groq"
+
+OLLAMA_BASE_URL = os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434")
+OLLAMA_CHAT_ENDPOINT = f"{OLLAMA_BASE_URL}/api/chat"
+MODEL_NAME = os.environ.get("AI_TEAM_MODEL", "qwen3:8b")
+
+GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
+GROQ_BASE_URL = os.environ.get(
+    "GROQ_BASE_URL", "https://api.groq.com/openai/v1/chat/completions"
+)
+GROQ_MODEL_NAME = os.environ.get("GROQ_MODEL_NAME", "llama-3.3-70b-versatile")
+
+MAX_TRANSPORT_RETRIES = 3       # network/timeout retries per Ollama call
+MAX_SCHEMA_RETRIES = 2          # re-prompt retries on invalid JSON / schema mismatch
+MAX_REVIEW_ITERATIONS = 3       # QA fail-loop cap, per task
+MAX_CLARIFICATION_ROUNDS = 2    # PM clarification-loop cap
+
+REQUEST_TIMEOUT_SECONDS = 600
+
+# Testing Agent: how long a single subprocess check (import / smoke-run) may
+# run before being killed. Real code execution, not an LLM call — kept short
+# since it only needs to prove the entry point starts cleanly.
+TEST_EXEC_TIMEOUT_SECONDS = 15
+
+PROMPTS_DIR = os.path.join(os.path.dirname(__file__), "..", "prompts")
+MEMORY_DB_PATH = os.path.join(os.path.dirname(__file__), "..", "memory", "project_state.db")
+
+LOG_DIR = os.path.join(os.path.dirname(__file__), "..", "memory", "logs")
