@@ -25,6 +25,12 @@ REQUEST_TIMEOUT_SECONDS = 600
 # since it only needs to prove the entry point starts cleanly.
 TEST_EXEC_TIMEOUT_SECONDS = 15
 
+# Where those checks run (tools/sandbox.py): "auto" uses Docker when a daemon
+# is reachable, else a scrubbed host subprocess; "docker" / "subprocess" force
+# one. The image only needs a Python interpreter.
+TEST_SANDBOX = os.environ.get("AI_TEAM_SANDBOX", "auto")
+SANDBOX_IMAGE = os.environ.get("AI_TEAM_SANDBOX_IMAGE", "python:3.12-slim")
+
 
 def workspace_dir() -> str:
     """Where generated files are written and executed. Read on every call

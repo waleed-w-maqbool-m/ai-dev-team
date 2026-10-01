@@ -940,7 +940,7 @@
     } else if (msg.message_type === "test_report") {
       const pass = p.status === "pass";
       if (!pass) currentRunStats.testFailures++;
-      addTrail({ kind: "test", agent: "Testing Agent", title: pass ? "Checks Passed" : "Checks Failed", taskId: p.task_id, checks: p.checks || [], summaryText: p.summary });
+      addTrail({ kind: "test", agent: "Testing Agent", title: pass ? "Checks Passed" : "Checks Failed", taskId: p.task_id, checks: p.checks || [], summaryText: p.sandbox ? `${p.summary} · ran in ${p.sandbox === "docker" ? "Docker sandbox" : "host subprocess"}` : p.summary });
       setCard("testing", pass ? "settled" : "returned", pass ? "all checks passed" : "check failed");
       setCard("qa", "active", "Reviewing with the Testing Agent's evidence in hand…");
       litEdge("testing-qa", true);

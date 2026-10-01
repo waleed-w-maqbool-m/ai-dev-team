@@ -15,6 +15,7 @@ class TestReport(BaseModel):
     task_id: str
     status: str  # "pass" | "fail"
     checks: list[TestCheck] = Field(default_factory=list)
+    sandbox: str = "subprocess"  # "docker" | "subprocess" — where the checks actually ran
     summary: str = ""
 
     def is_pass(self) -> bool:
