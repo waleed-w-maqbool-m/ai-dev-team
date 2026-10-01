@@ -53,13 +53,31 @@ class ProjectState(BaseModel):
             return None
         return self.get_task(self.current_task_id)
 
-    def next_pending_task(self) -> Task | None:
-        """Next task whose dependencies are all done, in list order."""
+    def next_pending_task(self, preferred_id: str | None = None) -> Task | None:
+        """Next task whose dependencies are all done — `preferred_id` if that
+        one is runnable, otherwise the first runnable task in list order."""
         done_ids = {t.id for t in self.tasks if t.status == TaskStatus.done}
-        for t in self.tasks:
-            if t.status == TaskStatus.pending and set(t.depends_on).issubset(done_ids):
+        runnable = [
+            t for t in self.tasks
+            if t.status == TaskStatus.pending and set(t.depends_on).issubset(done_ids)
+        ]
+        for t in runnable:
+            if t.id == preferred_id:
                 return t
-        return None
+        return runnable[0] if runnable else None
+
+    def tasks_with_unrunnable_blocked(self) -> list[Task]:
+        """If tasks are still pending but none of them can ever start — a
+        dependency was set aside for human review, or the plan has a cycle or
+        an unknown task id — mark them blocked_needs_human too. Without this
+        they'd count as remaining forever and the run would never finish."""
+        if self.next_pending_task() is not None:
+            return self.tasks
+        return [
+            t.model_copy(update={"status": TaskStatus.blocked_needs_human})
+            if t.status == TaskStatus.pending else t
+            for t in self.tasks
+        ]
 
     def has_remaining_tasks(self) -> bool:
         return any(

@@ -5,6 +5,13 @@ from schemas.state import ProjectState, ProjectStatus
 from schemas.task import TaskStatus
 
 
+def route_after_pm_plan(state: ProjectState) -> str:
+    """An empty plan, or one where no task can start, has nothing for the
+    Engineer to do — go straight to docs to report that, instead of handing
+    swe a task id of None."""
+    return "swe" if state.current_task_id is not None else "docs"
+
+
 def route_after_swe(state: ProjectState) -> str:
     """SWE either implemented the task, hit the clarification cap (task now
     blocked_needs_human — go straight to pm_check to move on), or requested
