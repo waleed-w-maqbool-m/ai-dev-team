@@ -20,4 +20,4 @@ docs/moodboard/
 # Frontend build output and QA artefacts
 frontend/node_modules/
 frontend/dist/
-qa/
+/qa/
