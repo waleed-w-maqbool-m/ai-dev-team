@@ -1,58 +1,123 @@
 # AI Development Team
 
-A 5-agent software engineering pipeline (Project Manager → Software Engineer →
-Testing Agent → QA Reviewer → Documentation Agent), built on **LangGraph**.
-The LLM backend is pluggable — run entirely locally against **Ollama**
-(default: **Qwen3 8B**), or point it at **Groq**'s free hosted API to run on
-their inference hardware instead. This is the reference implementation of the
-architecture described in `ai-dev-team-architecture.md`.
+[![tests](https://github.com/waleed-w-maqbool-m/ai-dev-team/actions/workflows/tests.yml/badge.svg)](https://github.com/waleed-w-maqbool-m/ai-dev-team/actions/workflows/tests.yml)
 
-## How it works, in one paragraph
+A five-agent software engineering pipeline built on **LangGraph**: a Project
+Manager plans, a Software Engineer implements, a Testing Agent *executes* the
+code in a sandbox, a QA Reviewer judges it against acceptance criteria with that
+evidence in hand, and a Documentation Agent writes it up. It runs on a local
+model through **Ollama** (default: Qwen3 8B) or on **Groq**'s hosted API, and
+ships with a **benchmark of hidden tests** that measures how often the
+generated code actually works.
 
-You give it a request. The Project Manager breaks it into tasks with
-acceptance criteria. For each task, the Software Engineer implements it, the
-Testing Agent actually runs the code (syntax, import, and entry-point checks —
-real subprocess execution, not an LLM opinion), and QA reviews it against the
-acceptance criteria *with that executed evidence in hand* — QA can send it
-back for up to 3 retries before the task is set aside for human review, so the
-loop can never run forever. If the Engineer hits something genuinely
-ambiguous, it asks the PM, which resolves it using the original request
-(bounded to 2 rounds, same reasoning). Once every task is done or set aside,
-the Documentation Agent writes the README/changelog updates and a final
-summary. All routing decisions are plain Python reading structured state —
-never a second LLM call guessing what to do next.
+```mermaid
+flowchart LR
+    U([request]) --> PM[Project Manager<br/>plan]
+    PM --> SWE[Software Engineer]
+    SWE -->|code written| T[Testing Agent<br/><i>no LLM: runs the code</i>]
+    T --> QA[QA Reviewer]
+    QA -->|fail, under retry cap| SWE
+    QA -->|pass, or cap reached| C[Project Manager<br/>check]
+    SWE -.->|needs clarification| PM
+    C -->|tasks left| SWE
+    C -->|all done or set aside| D[Documentation]
+    D --> E([summary + files])
+```
+
+## Design decisions
+
+- **Routing is code, not conversation.** Every "what happens next" decision is
+  plain Python in [`graph/routing.py`](graph/routing.py) reading typed
+  Pydantic state. Models fill in structured fields; they never decide control
+  flow. Even the PM's choice of next task is only a preference, checked
+  against the dependency graph before it's used.
+- **Executed evidence, not opinions.** The Testing Agent is the one agent that
+  isn't an LLM call: it parses, imports and smoke-runs what the Engineer just
+  wrote, and QA reviews with that report in hand. The benchmark has a switch to
+  turn it off and measure what it's worth.
+- **Generated code runs in a sandbox.** With Docker available, checks run in a
+  throwaway container with no network, a read-only filesystem, no
+  capabilities, a non-root user and memory/CPU/process limits
+  ([`tools/sandbox.py`](tools/sandbox.py)). Without Docker it falls back to a
+  host subprocess that at least can't read your API keys or hang on stdin.
+- **Every loop is bounded.** QA can send a task back 3 times, clarification
+  gets 2 rounds; after that the task is set aside for a human and the run
+  moves on. Tasks that can never start (a blocked dependency, a cycle in the
+  plan) are set aside too, so a run always finishes.
+- **Model output is validated, then trusted.** Each agent's reply must parse
+  into its Pydantic schema; on failure the model is re-prompted with the
+  validation error (once per provider, in
+  [`models/llm_client.py`](models/llm_client.py)). File paths it returns are
+  confined to the workspace — `../` and absolute paths are rejected.
+- **One model, many roles.** A single client serves every agent; role comes
+  from the system prompt ([`prompts/`](prompts/)), the output schema and the
+  sampling temperature. Each agent sees only the slice of state it needs
+  ([`utils/context.py`](utils/context.py)).
+
+The full design rationale is in
+[`ai-dev-team-architecture.md`](ai-dev-team-architecture.md) (written before
+the Testing Agent and provider abstraction existed — the code is authoritative
+where they differ).
+
+## Benchmark
+
+`bench/` runs the whole pipeline on 12 specified tasks — CLI tools that read
+files and stdin, a hand-written expression parser, SemVer precedence rules, a
+two-file library plus CLI — and scores the output with **66 hidden test
+cases** the agents never see. Every task has a reference solution that CI
+checks against its own hidden tests, so the expected outputs are verified too.
+
+Besides "solved", the report tracks **false "done"**: runs where QA approved
+every task but the code still fails hidden tests — how often the team's own
+review is wrong.
+
+```bash
+python -m bench.run --name llama-3.3-70b --provider groq --model llama-3.3-70b-versatile
+python -m bench.run --name llama-3.1-8b --provider groq --model llama-3.1-8b-instant
+python -m bench.run --name llama-3.1-8b-no-testing --provider groq --model llama-3.1-8b-instant --testing off
+python -m bench.report    # writes bench/RESULTS.md
+```
+
+Runs resume where they left off, so a run stopped by Groq's free-tier daily
+quota can be continued later with the same command. Results are written to
+`bench/RESULTS.md`.
 
 ## Setup
+
+Requires Python 3.12+.
 
 ```bash
 pip install -r requirements.txt
 ```
 
-Then pick an LLM backend:
+Then pick a model backend:
 
-**Option A — Ollama (local, fully offline, needs a decent GPU or patience on CPU)**
+**Groq (hosted, free tier).** Get a key at <https://console.groq.com/keys>,
+then copy `.env.example` to `.env` and fill it in (or set the same variables
+in your shell):
+
+```
+LLM_PROVIDER=groq
+GROQ_API_KEY=gsk_...
+```
+
+The default model is `llama-3.3-70b-versatile`; set `GROQ_MODEL_NAME` to use
+another from Groq's catalog. The free tier is rate-limited: short limits are
+waited out automatically, and an exhausted daily quota stops the run with a
+clear error instead of sleeping for hours.
+
+**Ollama (local, offline).** Needs enough RAM/VRAM for the model.
 
 ```bash
 ollama pull qwen3:8b
-ollama serve   # if not already running as a service
+ollama serve
 ```
 
-No further configuration needed — `LLM_PROVIDER` defaults to `ollama`.
+`LLM_PROVIDER` defaults to `ollama`, so nothing else is needed.
 
-**Option B — Groq (hosted, free tier, no local hardware requirements)**
-
-```bash
-# Get a free API key: https://console.groq.com/keys
-export GROQ_API_KEY=your-key-here     # PowerShell: $env:GROQ_API_KEY="your-key-here"
-export LLM_PROVIDER=groq              # PowerShell: $env:LLM_PROVIDER="groq"
-```
-
-Defaults to `llama-3.3-70b-versatile`; override with `GROQ_MODEL_NAME` to use
-a different model from Groq's catalog (check `console.groq.com/docs/models`
-for current model IDs, since hosted lineups change over time). Groq's free
-tier is rate-limited (not unlimited), so a large multi-task run may pause
-briefly if a limit is hit — the pipeline's existing transport-retry backoff
-absorbs this automatically.
+**Docker (optional, recommended).** If a Docker daemon is running, generated
+code is checked inside the sandbox container automatically
+(`AI_TEAM_SANDBOX=auto`). Set `AI_TEAM_SANDBOX=docker` to require it.
 
 ## Usage
 
@@ -60,94 +125,79 @@ absorbs this automatically.
 python main.py "Build a CLI tool that converts CSV files to JSON."
 ```
 
-This will:
-- Plan and implement the request, writing files under `workspace/` (override
-  with the `AI_TEAM_WORKSPACE` env var to point at a real project checkout
-  instead).
-- Persist run state to `memory/project_state.db` (via LangGraph's SQLite
-  checkpointer), so an interrupted run can be resumed by reusing the same
-  `thread_id`.
-- Log the full agent message audit trail as JSONL to `memory/logs/`.
-- Print a task-by-task status summary and the final user-facing summary.
+Files are written under `workspace/` (override with `AI_TEAM_WORKSPACE`). Run
+state is checkpointed to `memory/project_state.db`, so an interrupted run can
+be resumed with the same `thread_id`, and every agent message is logged as
+JSONL under `memory/logs/`.
+
+### Web console
+
+```bash
+python api.py      # then open http://127.0.0.1:8000
+```
+
+A local dashboard that streams a real run over Server-Sent Events: each
+agent's progress, the Testing Agent's checks (and which sandbox ran them), QA
+findings, the generated files, and a zip download of them. It binds to
+`127.0.0.1` only — it executes model-written code, so never expose it
+publicly.
 
 ### Configuration
 
-Everything tunable lives in `config/settings.py` — LLM provider, model
-names, Ollama/Groq URLs, retry caps, timeouts. Per-agent sampling
-temperatures live on `RunConfig` in `schemas/state.py` if you want different
-values per run (PM/QA default low for consistency, the Engineer defaults
-slightly higher).
+| Variable | Default | |
+|---|---|---|
+| `LLM_PROVIDER` | `ollama` | `ollama` or `groq` |
+| `GROQ_API_KEY` / `GROQ_MODEL_NAME` | — / `llama-3.3-70b-versatile` | Groq credentials and model |
+| `AI_TEAM_MODEL` / `OLLAMA_BASE_URL` | `qwen3:8b` / `http://localhost:11434` | Ollama model and server |
+| `AI_TEAM_WORKSPACE` | `./workspace` | where generated files go |
+| `AI_TEAM_SANDBOX` | `auto` | `auto`, `docker` or `subprocess` |
+| `AI_TEAM_TESTING` | `on` | `off` skips the Testing Agent (for the ablation) |
 
-## Web console
+Retry caps, timeouts and the rest live in
+[`config/settings.py`](config/settings.py); per-agent temperatures are on
+`RunConfig` in [`schemas/state.py`](schemas/state.py).
 
-`api.py` serves a local dashboard (`dashboard/index.html`) with a live view
-of the pipeline running against a real request, streamed over Server-Sent
-Events — a Console page (agent-by-agent progress, generated files), an About
-page, and Run Logs / Analytics pages backed by real runs (stored in your
-browser, not fabricated data).
-
-```bash
-pip install -r requirements.txt   # includes fastapi/uvicorn
-python api.py
-# open http://127.0.0.1:8000
-```
-
-Binds to `127.0.0.1` only — never expose this on `0.0.0.0` or the public
-internet. The Testing Agent executes generated code as a real subprocess,
-which is a reasonable risk to accept on your own machine and a bad one to
-accept from strangers on the internet.
-
-## Running the tests
-
-The test suite mocks the LLM layer (`agents.base.BaseAgent.run`) so it runs
-without a live Ollama server, and exercises the parts of the system that are
-easy to get subtly wrong:
+## Tests
 
 ```bash
-python tests/test_pipeline_mock.py   # full happy-path run: clarification
-                                       # round, QA fail-then-pass, a 2-task
-                                       # dependency chain, and doc generation
-python tests/test_review_cap.py       # confirms the QA retry cap actually
-                                       # bounds the loop (task ends up
-                                       # blocked_needs_human, not infinite)
-python tests/test_testing_agent.py    # Testing Agent's real (non-LLM) checks:
-                                       # a syntax error fails the report; a
-                                       # clean module and a clean CLI entry
-                                       # point both pass
+pip install -r requirements-dev.txt
+pytest
 ```
 
-Both scripts assert on the resulting `ProjectState` and exit non-zero on
-failure — wire them into CI or a pre-commit hook as-is.
+The LLM is mocked at its single seam (`BaseAgent.run`), so the suite needs no
+model or API key. It covers the full graph (clarification round, QA
+fail-then-pass, dependency chains), the retry caps, bad PM answers
+(hallucinated or finished task ids, invented statuses, dependency cycles),
+workspace path confinement, the Testing Agent's real checks, schema retries
+and rate-limit handling, and the benchmark's own reference solutions. CI runs
+it on Python 3.12 and 3.13, with the Docker sandbox and with the subprocess
+fallback.
 
 ## Project structure
 
-See `ai-dev-team-architecture.md` for the full rationale. Short version:
-
-| Folder | Contains |
+| Path | Contains |
 |---|---|
-| `agents/` | One node function per agent (`schemas/*` in, `dict` of state updates out) — including `testing.py`, the only agent that isn't an LLM call |
-| `prompts/` | Raw system prompt text, editable without touching Python |
-| `graph/` | LangGraph wiring (`build_graph.py`) and routing logic (`routing.py`) — the only place control-flow decisions are made |
-| `models/` | `LLMClient` interface + `OllamaClient`/`GroqClient` implementations, selected by `models/factory.py` — schema-validated retries live once on the shared base class |
-| `schemas/` | Every Pydantic I/O contract — the source of truth for what agents produce |
-| `tools/` | Side-effecting operations (currently: applying file changes to disk) |
-| `memory/` | SQLite checkpoints + JSONL message logs (gitignored, regenerated per run) |
-| `config/` | All tunables in one file |
-| `utils/` | Context-slicing policy (`context.py`) and the message logger (`logging.py`) |
-| `tests/` | Mocked end-to-end tests — no live Ollama required |
-| `dashboard/` | The local web console's HTML/CSS/JS (single file, no build step) |
-| `api.py` | Local-only FastAPI server: serves the dashboard and streams real runs over SSE |
+| `agents/` | One node function per agent; `testing.py` is the non-LLM one |
+| `graph/` | LangGraph wiring (`build_graph.py`) and every routing decision (`routing.py`) |
+| `models/` | `LLMClient` interface with schema-validated retries, plus Ollama and Groq backends |
+| `schemas/` | Pydantic contracts for every agent's output and the shared `ProjectState` |
+| `prompts/` | System prompts as plain Markdown, editable without touching Python |
+| `tools/` | Side effects: writing files (`filesystem.py`), running generated code (`sandbox.py`) |
+| `utils/` | Per-agent context slicing and the message logger |
+| `bench/` | Benchmark tasks, hidden tests, reference solutions, runner and report |
+| `dashboard/`, `api.py` | Local web console and its FastAPI/SSE backend |
+| `tests/` | pytest suite |
 
-## Known limitations (v1)
+## Known limitations
 
-- Tasks are processed sequentially — no parallel execution.
-- The clarification-resolution path re-plans by replacing the entire task
-  list rather than surgically patching one task; fine for a single
-  clarification round, worth revisiting if you extend the clarification cap.
-- The Testing Agent runs real syntax/import/entry-point checks (see
-  `agents/testing.py`), so QA no longer reviews by inspection alone — but it
-  is **not sandboxed**: checks execute as subprocesses directly on the host,
-  scoped to `AI_TEAM_WORKSPACE`, with a timeout and nothing else. Don't point
-  `AI_TEAM_WORKSPACE` at anything you wouldn't want LLM-generated code running
-  near. It also doesn't run a real test suite (pytest, etc.) against the
-  code's actual behavior — only that it parses, imports, and starts cleanly.
+- Tasks run one at a time; there is no parallel execution.
+- A clarification round re-plans the whole task list rather than patching one
+  task.
+- The Testing Agent proves code parses, imports and starts — it doesn't write
+  or run behavioural tests of its own. (The benchmark's hidden tests do, but
+  only for scoring.)
+- Without Docker, generated code runs on the host with only a scrubbed
+  environment and a timeout between it and your files. Use Docker, and don't
+  point `AI_TEAM_WORKSPACE` at anything you care about.
+- The Docker sandbox image has only the standard library, so generated code
+  that needs third-party packages fails its import check there.
