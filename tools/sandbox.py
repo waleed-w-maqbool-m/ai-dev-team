@@ -68,9 +68,9 @@ def active_backend() -> str:
     raise ValueError(f"Unknown AI_TEAM_SANDBOX: {mode!r} (expected auto, docker or subprocess)")
 
 
-def docker_command(workspace: str, args: list[str], name: str) -> list[str]:
+def docker_command(workspace: str, args: list[str], name: str, interactive: bool = False) -> list[str]:
     return [
-        "docker", "run", "--rm", "--name", name,
+        "docker", "run", "--rm", "--name", name, *(["-i"] if interactive else []),
         "--network", "none",
         "--read-only", "--tmpfs", "/tmp:size=16m",
         "--cap-drop", "ALL", "--security-opt", "no-new-privileges",
@@ -82,24 +82,29 @@ def docker_command(workspace: str, args: list[str], name: str) -> list[str]:
     ]
 
 
-def run_python(args: list[str], backend: str) -> RunResult:
-    """Runs `python <args>` with the workspace as the working directory."""
-    workspace = settings.workspace_dir()
+def run_python(
+    args: list[str], backend: str, stdin: str | None = None, workspace: str | None = None
+) -> RunResult:
+    """Runs `python <args>` with the workspace (default: the configured one)
+    as the working directory, feeding it `stdin` if given (otherwise stdin
+    is closed)."""
+    workspace = workspace or settings.workspace_dir()
     timeout = settings.TEST_EXEC_TIMEOUT_SECONDS
 
     if backend == "docker":
         name = f"ai-team-check-{uuid.uuid4().hex[:12]}"
-        cmd, cwd, env = docker_command(workspace, args, name), None, None
+        cmd, cwd, env = docker_command(workspace, args, name, interactive=stdin is not None), None, None
     else:
         name = None
         cmd, cwd = [sys.executable, *args], workspace
         env = {k: os.environ[k] for k in _SAFE_ENV_KEYS if k in os.environ}
-        env["PYTHONDONTWRITEBYTECODE"] = "1"
+        env.update(PYTHONDONTWRITEBYTECODE="1", PYTHONUTF8="1")
 
     try:
         proc = subprocess.run(
-            cmd, cwd=cwd, env=env, stdin=subprocess.DEVNULL,
-            capture_output=True, text=True, timeout=timeout,
+            cmd, cwd=cwd, env=env, capture_output=True, text=True, timeout=timeout,
+            encoding="utf-8", errors="replace",
+            **({"input": stdin} if stdin is not None else {"stdin": subprocess.DEVNULL}),
         )
     except subprocess.TimeoutExpired as e:
         if name:

@@ -8,3 +8,8 @@ workspace/
 memory/*.db
 memory/logs/
 !memory/.gitkeep
+
+# Secrets and benchmark scratch output (results/*.jsonl and RESULTS.md are kept)
+.env
+bench/runs/
+.pytest_cache/

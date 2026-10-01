@@ -1,6 +1,23 @@
 """Single place to tune system behavior without touching agent code."""
 import os
 
+
+def _load_dotenv(path: str) -> None:
+    """Minimal .env support (KEY=VALUE lines, # comments) so an API key can
+    live in a gitignored file instead of the shell. Real environment
+    variables always win."""
+    if not os.path.isfile(path):
+        return
+    with open(path, encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if line and not line.startswith("#") and "=" in line:
+                key, value = line.split("=", 1)
+                os.environ.setdefault(key.strip(), value.strip().strip("\"'"))
+
+
+_load_dotenv(os.path.join(os.path.dirname(__file__), "..", ".env"))
+
 LLM_PROVIDER = os.environ.get("LLM_PROVIDER", "ollama")  # "ollama" | "groq"
 
 OLLAMA_BASE_URL = os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434")
