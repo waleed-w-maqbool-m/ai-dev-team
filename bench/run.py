@@ -54,6 +54,18 @@ def _run_pipeline(task, workspace: str, log_path: str, env: dict, timeout: int) 
         return {"error": f"worker crashed: {proc.stderr.strip()[-1000:]}", "quota_exhausted": False}
 
 
+def _attach_score(replay_path: str, hidden: dict) -> None:
+    """Records the hidden-test score on the run's replay, so the web
+    console's Runs library can show it next to the recording."""
+    if not os.path.exists(replay_path):
+        return
+    with open(replay_path, encoding="utf-8") as f:
+        replay = json.load(f)
+    replay["hidden_tests"] = {"passed": hidden["passed"], "total": hidden["total"]}
+    with open(replay_path, "w", encoding="utf-8") as f:
+        json.dump(replay, f, ensure_ascii=False)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--name", required=True, help="results file name, e.g. llama-3.3-70b")
@@ -100,6 +112,7 @@ def main():
                 print("[bench] stopping; re-run the same command later to resume.")
                 return
             hidden = run_hidden_tests(task, workspace, backend)
+            _attach_score(os.path.join(run_dir, "replay.json"), hidden)
 
             record = {
                 "config": config, "task": task.id, "difficulty": task.difficulty, "repeat": repeat,

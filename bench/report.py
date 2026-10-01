@@ -53,6 +53,33 @@ def summarize(records: list[dict]) -> dict:
     }
 
 
+def benchmark_json() -> dict:
+    """The same numbers as RESULTS.md, shaped for the web console."""
+    by_config = load_results()
+    configs = []
+    for name, records in by_config.items():
+        s, cfg = summarize(records), records[0]["config"]
+        configs.append({"name": name, "model": cfg["model"], "testing_agent": cfg["testing_agent"], **s})
+    per_task = []
+    for task in TASKS:
+        results = {}
+        for name, records in by_config.items():
+            runs = [r for r in records if r["task"] == task.id]
+            if runs:
+                results[name] = ", ".join(
+                    f"{r['hidden']['passed']}/{r['hidden']['total']}" + (" ✓" if _solved(r) else "") for r in runs
+                )
+        per_task.append({"task": task.id, "difficulty": task.difficulty, "results": results})
+    finished = [r["finished_at"] for rs in by_config.values() for r in rs if r.get("finished_at")]
+    return {
+        "generated_at": max(finished) if finished else None,
+        "task_count": len(TASKS),
+        "case_count": sum(len(t.cases) for t in TASKS),
+        "configs": configs,
+        "per_task": per_task,
+    }
+
+
 def render(by_config: dict[str, list[dict]]) -> str:
     lines = [
         "# Benchmark results",

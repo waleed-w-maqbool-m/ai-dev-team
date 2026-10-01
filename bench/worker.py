@@ -6,6 +6,7 @@ settings from the environment.
 Usage: python -m bench.worker MESSAGES_LOG_PATH < request.txt
 """
 import json
+import os
 import sys
 import time
 
@@ -40,6 +41,16 @@ def main():
     with open(log_path, "w", encoding="utf-8") as f:
         for msg in state.messages:
             f.write(json.dumps(msg.model_dump(mode="json")) + "\n")
+
+    # The same run as a replay for the web console: bench/runs/<config>/<task>-r<k>/replay.json
+    from utils import replays
+    run_dir = os.path.dirname(os.path.abspath(log_path))
+    replay_id = f"bench-{os.path.basename(os.path.dirname(run_dir))}-{os.path.basename(run_dir)}"
+    if state.messages:
+        replays.save_replay(
+            replays.replay_from_state(replay_id, state, source="bench", note=f"Ended with an error: {error[:160]}" if error else None),
+            directory=run_dir, filename="replay.json",
+        )
 
     types = [m.message_type.value for m in state.messages]
     test_fails = sum(1 for m in state.messages if m.message_type.value == "test_report" and m.payload.get("status") == "fail")

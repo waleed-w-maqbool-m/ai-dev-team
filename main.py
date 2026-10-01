@@ -16,6 +16,7 @@ from langgraph.checkpoint.sqlite import SqliteSaver
 from config import settings
 from graph.build_graph import build_graph
 from schemas.state import ProjectState
+from utils import replays
 from utils.logging import log_all
 
 
@@ -31,6 +32,7 @@ def run(user_request: str, thread_id: str | None = None) -> ProjectState:
         final_state = ProjectState.model_validate(result)
 
     log_all(thread_id, final_state.messages)
+    replays.save_replay(replays.replay_from_state(f"cli-{thread_id[:8]}", final_state, source="cli"))
     return final_state
 
 
