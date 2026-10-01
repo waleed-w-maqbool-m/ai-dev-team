@@ -13,11 +13,13 @@ export function Cursor() {
 
   useEffect(() => {
     if (!enabled || !dot.current || !ring.current || !root.current) return;
-    document.documentElement.dataset.cursor = "custom";
+    // Not "data-cursor": that attribute names an action label, and <html>
+    // would then match closest("[data-cursor]") everywhere on the page.
+    document.documentElement.dataset.cursorMode = "custom";
     const dx = gsap.quickTo(dot.current, "x", { duration: 0.08, ease: "power3.out" });
     const dy = gsap.quickTo(dot.current, "y", { duration: 0.08, ease: "power3.out" });
-    const rx = gsap.quickTo(ring.current, "x", { duration: 0.45, ease: "power3.out" });
-    const ry = gsap.quickTo(ring.current, "y", { duration: 0.45, ease: "power3.out" });
+    const rx = gsap.quickTo(ring.current, "x", { duration: 0.3, ease: "power3.out" });
+    const ry = gsap.quickTo(ring.current, "y", { duration: 0.3, ease: "power3.out" });
     const el = root.current;
 
     const move = (e: PointerEvent) => {
@@ -33,7 +35,7 @@ export function Cursor() {
     return () => {
       window.removeEventListener("pointermove", move);
       document.removeEventListener("pointerleave", leave);
-      delete document.documentElement.dataset.cursor;
+      delete document.documentElement.dataset.cursorMode;
     };
   }, [enabled]);
 

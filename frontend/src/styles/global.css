@@ -11,8 +11,9 @@ body {
   text-rendering: optimizeLegibility;
   overflow-x: hidden;
 }
-html[data-cursor="custom"] body, html[data-cursor="custom"] a, html[data-cursor="custom"] button { cursor: none; }
-html[data-cursor="custom"] input, html[data-cursor="custom"] textarea, html[data-cursor="custom"] select { cursor: text; }
+html[data-cursor-mode="custom"] body, html[data-cursor-mode="custom"] a, html[data-cursor-mode="custom"] button { cursor: none; }
+html[data-cursor-mode="custom"] input, html[data-cursor-mode="custom"] textarea { cursor: text; }
+html[data-cursor-mode="custom"] select { cursor: pointer; }
 img, svg { display: block; }
 button { font: inherit; color: inherit; background: none; border: 0; padding: 0; }
 a { color: inherit; }
@@ -100,7 +101,7 @@ a { color: inherit; }
     background 0.3s var(--ease-enter), border-color 0.3s;
 }
 .cursor[data-label] .cursor__ring {
-  width: 78px; height: 78px; margin: -39px 0 0 -39px; background: var(--text); border-color: transparent;
+  width: 64px; height: 64px; margin: -32px 0 0 -32px; background: var(--text); border-color: transparent;
 }
 .cursor__label {
   font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.1em; color: var(--bg); font-weight: 600;

@@ -16,6 +16,16 @@ const STATUS_LABEL: Record<string, string> = {
   blocked_needs_human: "needs a human",
 };
 
+// Requests sized for what the pipeline does well: one small, testable tool
+// with a few clear tasks, standard library only (the Docker sandbox has no
+// third-party packages).
+const EXAMPLE_REQUESTS = [
+  "Build a cron expression parser: a library that validates standard 5-field cron expressions, and a CLI that explains one in plain English and prints its next 5 run times.",
+  "Build a token-bucket rate limiter library, plus a CLI that replays a request log and reports which requests would have been throttled.",
+  "Build a Markdown table-of-contents generator: a CLI that reads a .md file, builds a nested TOC with GitHub-style anchor links, and inserts it between <!-- toc --> markers.",
+  "Build a dependency-graph resolver: read packages and their dependencies from a JSON file, print a valid install order, and report any cycles clearly.",
+];
+
 function formatDate(iso: string) {
   const d = new Date(iso);
   return Number.isNaN(d.getTime()) ? iso : d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
@@ -23,7 +33,7 @@ function formatDate(iso: string) {
 
 function TopBar({ health, replays }: { health: Health; replays: ReplayMeta[] }) {
   const { source, replay, request, startLive, loadReplay, liveStatus, error } = useRun();
-  const [draft, setDraft] = useState("Build a CLI tool that converts CSV files to JSON.");
+  const [draft, setDraft] = useState(EXAMPLE_REQUESTS[0]);
   const busy = source === "live" && (liveStatus === "connecting" || liveStatus === "streaming");
 
   return (
@@ -44,7 +54,11 @@ function TopBar({ health, replays }: { health: Health; replays: ReplayMeta[] }) 
           readOnly={busy}
           placeholder="Describe a small CLI tool or library…"
           autoComplete="off"
+          list="request-examples"
         />
+        <datalist id="request-examples">
+          {EXAMPLE_REQUESTS.map((r) => <option key={r} value={r} />)}
+        </datalist>
         <MagneticButton type="submit" size="sm" disabled={!health.live || busy} cursor="RUN" title={health.live ? undefined : "Live runs need the local backend (python api.py) and an API key."}>
           {busy ? "Running…" : "Run live"}
         </MagneticButton>
@@ -74,7 +88,9 @@ function TopBar({ health, replays }: { health: Health; replays: ReplayMeta[] }) 
         {source === "none" && !health.live && <span className="dim">Live runs need the local backend. Recorded runs play here.</span>}
         {error && <span className="fail"> {error}</span>}
       </p>
-      {source === "replay" && replay?.note && <p className="topbar__note mono dim">{replay.note}</p>}
+      {source === "replay" && replay?.note && (
+        <p className="topbar__note mono dim" title={replay.note}>{replay.note}</p>
+      )}
     </div>
   );
 }
@@ -158,18 +174,25 @@ export function TheaterPage() {
   useEffect(() => setSelected(null), [source]);
 
   return (
+    // A grid, not absolutely positioned boxes: the HUD stacks in flow, so
+    // a taller top bar or a long summary pushes things down instead of
+    // landing on top of them, at any screen height.
     <main id="main" className="theater">
       <h1 className="sr-only">Agent Theater</h1>
-      <TopBar health={health} replays={replays} />
-      <TaskStrip />
-      <OutputPanel selected={selected} file={file} onClearFile={() => setFile(null)} />
-      {phase === "done" && summary && (
-        <div className="theater__summary panel">
-          <p className="mono dim">Run complete</p>
-          <p>{summary}</p>
+      <div className="theater__left">
+        <TopBar health={health} replays={replays} />
+        <TaskStrip />
+        <div className="theater__dock">
+          {phase === "done" && summary && (
+            <div className="theater__summary panel">
+              <p className="mono dim">Run complete</p>
+              <p>{summary}</p>
+            </div>
+          )}
+          <FilesDrawer onOpen={setFile} live={health.live} />
         </div>
-      )}
-      <FilesDrawer onOpen={setFile} live={health.live} />
+      </div>
+      <OutputPanel selected={selected} file={file} onClearFile={() => setFile(null)} />
       <Timeline selected={selected} onSelect={setSelected} />
       <LiveLog />
     </main>
