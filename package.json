@@ -1,0 +1,16 @@
+{
+  "name": "ai-dev-team",
+  "private": true,
+  "description": "Deployment wrapper for the web console. The pipeline itself is Python; see README.md.",
+  "scripts": {
+    "build": "npm ci --prefix frontend && npm run build --prefix frontend",
+    "preview": "wrangler dev",
+    "deploy": "npm run build && wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "^4.145.0"
+  },
+  "allowScripts": {
+    "workerd": true
+  }
+}

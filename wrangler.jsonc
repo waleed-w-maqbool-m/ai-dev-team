@@ -1,0 +1,13 @@
+{
+  // Cloudflare Worker serving the web console as static assets only — the
+  // replay-only build: no backend, no API keys, no generated code is ever
+  // executed. Live runs need the local FastAPI app (python api.py).
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "ai-dev-team",
+  "compatibility_date": "2026-10-01",
+  "assets": {
+    "directory": "./frontend/dist",
+    // Deep links (/theater, /library, ...) load the app shell.
+    "not_found_handling": "single-page-application"
+  }
+}

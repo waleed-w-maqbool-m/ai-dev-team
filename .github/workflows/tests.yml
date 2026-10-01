@@ -43,3 +43,6 @@ jobs:
         working-directory: frontend
       - run: npm run build
         working-directory: frontend
+      # Validates wrangler.jsonc + the built assets the way Cloudflare's build
+      # will, without deploying (no credentials needed).
+      - run: npm ci && npx wrangler deploy --dry-run

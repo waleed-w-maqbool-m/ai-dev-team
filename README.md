@@ -162,9 +162,26 @@ motion, no-WebGL). The design brief is in
 [`docs/creative-brief.md`](docs/creative-brief.md).
 
 The server binds to `127.0.0.1` only — it executes model-written code, so
-never expose it publicly. A **replay-only** static build (no backend, no
-key) can be published to GitHub Pages with the `pages` workflow;
-`scripts/export_static_data.py` chooses which replays it includes.
+never expose it publicly.
+
+### Public deployment (Cloudflare Workers)
+
+The public site is the **replay-only** build: static assets on a Cloudflare
+Worker, no backend, no API keys, nothing executed. "Run live" shows as
+unavailable there; recorded runs, the Story page and the Benchmark page all
+work. `wrangler.jsonc` configures it (SPA routing, `frontend/public/_headers`
+for caching and a strict CSP).
+
+Deploy from the Cloudflare dashboard with Git integration:
+**Workers & Pages → Create → Import a repository → this repo**, Worker name
+`ai-dev-team`, build command `npm run build`, deploy command
+`npx wrangler deploy`. Every push to `master` then redeploys. Or from a
+machine logged in with `npx wrangler login`: `npm install && npm run deploy`.
+
+Which runs the public site replays is explicit:
+`python scripts/export_static_data.py [--publish-bench]` writes
+`frontend/public/replays/` and `benchmark.json` — commit them to publish.
+(The `pages` workflow builds the same thing for GitHub Pages.)
 
 ### Configuration
 

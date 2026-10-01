@@ -15,7 +15,7 @@ from playwright.sync_api import sync_playwright
 
 OUT = sys.argv[1]
 sys.stdout.reconfigure(encoding="utf-8")
-BASE = "http://127.0.0.1:8000"
+BASE = os.environ.get("QA_BASE", "http://127.0.0.1:8000")
 GPU_ARGS = ["--ignore-gpu-blocklist", "--enable-gpu-rasterization", "--use-angle=d3d11"]
 AXE = os.path.join(os.path.dirname(__file__), "..", "node_modules", "axe-core", "axe.min.js")
 VIEWPORTS = {"mobile": (390, 844), "tablet": (768, 1024), "desktop": (1440, 900)}
@@ -248,7 +248,8 @@ with sync_playwright() as p:
     ctx.close()
 
     # ---------- E. accessibility ----------
-    ctx = browser.new_context(viewport={"width": 1440, "height": 900})
+    # bypass_csp: the deployed CSP (script-src 'self') rightly blocks injecting axe.
+    ctx = browser.new_context(viewport={"width": 1440, "height": 900}, bypass_csp=True)
     page = ctx.new_page()
     axe_results = {}
     for route in ["", "theater", "library", "benchmark"]:

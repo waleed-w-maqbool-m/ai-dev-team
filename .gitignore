@@ -21,3 +21,7 @@ docs/moodboard/
 frontend/node_modules/
 frontend/dist/
 /qa/
+
+# Cloudflare deployment tooling
+/node_modules/
+.wrangler/
