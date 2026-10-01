@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository layout
 
-The actual project lives in the `ai-dev-team/` subdirectory — run all commands from there (or prefix paths with it).
+Run all commands from the repository root.
 
 ## Commands
 
@@ -37,7 +37,7 @@ Output workspace defaults to `./workspace/` (override with `AI_TEAM_WORKSPACE`).
 
 ## Architecture
 
-This is a 5-agent software engineering pipeline — Project Manager → Software Engineer → Testing Agent → QA Reviewer → Documentation Agent — built on **LangGraph**. The LLM backend is pluggable (`LLM_PROVIDER=ollama|groq`, default `ollama` running **Qwen3 8B** locally; `groq` runs against Groq's free hosted API instead). The full design rationale lives in `ai-dev-team/ai-dev-team-architecture.md`; treat the code as authoritative where it has since diverged from that doc — it predates the `LLMClient` provider abstraction and the Testing Agent described below (Section 20 only *proposes* Testing as a future extension; it's since been implemented, not just proposed).
+This is a 5-agent software engineering pipeline — Project Manager → Software Engineer → Testing Agent → QA Reviewer → Documentation Agent — built on **LangGraph**. The LLM backend is pluggable (`LLM_PROVIDER=ollama|groq`, default `ollama` running **Qwen3 8B** locally; `groq` runs against Groq's free hosted API instead). The full design rationale lives in `ai-dev-team-architecture.md`; treat the code as authoritative where it has since diverged from that doc — it predates the `LLMClient` provider abstraction and the Testing Agent described below (Section 20 only *proposes* Testing as a future extension; it's since been implemented, not just proposed).
 
 The Testing Agent (`agents/testing.py`) is the one agent in this pipeline that is **not an LLM call** — it's a deterministic node that runs real subprocess checks (syntax parse, import, and a `--help` smoke-run for anything with a `__main__` guard) against whatever the Software Engineer just wrote, and writes a `TestReport` onto the task. It has no routing authority — QA still makes the sole pass/fail call, just with that report as input (`utils/context.py::qa_context`) instead of code inspection alone. This directly replaces the old "QA reviews by inspection only" limitation; see the safety caveat in Known Limitations before pointing `AI_TEAM_WORKSPACE` at anything sensitive.
 
@@ -85,7 +85,7 @@ Kept as raw `.md` text, separate from `agents/`, specifically so prompt iteratio
 
 ### Configuration
 
-Everything tunable (LLM provider, Ollama/Groq URLs and model names, retry caps, timeouts) lives in `ai-dev-team/config/settings.py`, overridable via env vars (`LLM_PROVIDER`, `OLLAMA_BASE_URL`, `AI_TEAM_MODEL`, `GROQ_API_KEY`, `GROQ_BASE_URL`, `GROQ_MODEL_NAME`, `AI_TEAM_WORKSPACE`). Per-agent sampling temperatures live on `RunConfig` in `schemas/state.py` instead, since they can vary per run.
+Everything tunable (LLM provider, Ollama/Groq URLs and model names, retry caps, timeouts) lives in `config/settings.py`, overridable via env vars (`LLM_PROVIDER`, `OLLAMA_BASE_URL`, `AI_TEAM_MODEL`, `GROQ_API_KEY`, `GROQ_BASE_URL`, `GROQ_MODEL_NAME`, `AI_TEAM_WORKSPACE`). Per-agent sampling temperatures live on `RunConfig` in `schemas/state.py` instead, since they can vary per run.
 
 ### Adding another LLM provider
 
