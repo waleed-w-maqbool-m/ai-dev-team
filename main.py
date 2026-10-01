@@ -43,7 +43,7 @@ def _print_summary(state: ProjectState) -> None:
     if state.final_summary:
         print("\n--- Summary ---")
         print(state.final_summary)
-    print(f"\nWorkspace: {os.environ.get('AI_TEAM_WORKSPACE', os.path.join(os.getcwd(), 'workspace'))}")
+    print(f"\nWorkspace: {settings.workspace_dir()}")
 
 
 if __name__ == "__main__":

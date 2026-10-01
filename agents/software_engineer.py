@@ -1,8 +1,7 @@
 """Software Engineer: implements the current task, or escalates a clarification
 request to the PM if the task is genuinely unimplementable as specified."""
-import os
-
 from agents.base import BaseAgent
+from config import settings
 from schemas.state import ProjectState, ProjectStatus
 from schemas.task import TaskStatus
 from schemas.implementation import ImplementationSummary
@@ -11,12 +10,6 @@ from tools.filesystem import apply_file_changes
 from utils import context as ctx
 
 SENDER = "software_engineer"
-
-# Where implemented file changes are written. Override via env var for a
-# real project checkout; defaults to a local workspace subfolder so the
-# system is runnable out of the box.
-TARGET_PROJECT_DIR = os.environ.get("AI_TEAM_WORKSPACE", os.path.join(os.getcwd(), "workspace"))
-
 
 def swe_node(state: ProjectState) -> dict:
     agent = BaseAgent("software_engineer.md")
@@ -52,7 +45,18 @@ def swe_node(state: ProjectState) -> dict:
             "messages": state.append_message(msg),
         }
 
-    apply_file_changes(TARGET_PROJECT_DIR, result.files_changed)
+    applied, rejected = apply_file_changes(settings.workspace_dir(), result.files_changed)
+    if rejected:
+        # Only what actually landed on disk goes into the message, so the
+        # Testing Agent and QA judge the real diff; QA also sees why the rest
+        # is missing and can send it back.
+        result = result.model_copy(update={
+            "files_changed": applied,
+            "summary": (
+                f"{result.summary}\n\n[pipeline] Rejected paths outside the "
+                f"workspace: {', '.join(rejected)}"
+            ),
+        })
 
     updated_task = task.model_copy(update={"status": TaskStatus.in_review})
 

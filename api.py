@@ -22,9 +22,10 @@ from fastapi import FastAPI, Query
 from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
-from agents.software_engineer import TARGET_PROJECT_DIR
+from config import settings
 from graph.build_graph import build_graph
 from schemas.state import ProjectState
+from tools.filesystem import resolve_in_workspace
 
 app = FastAPI(title="AI Dev Team API")
 
@@ -34,8 +35,9 @@ DASHBOARD_PATH = os.path.join(os.path.dirname(__file__), "dashboard", "index.htm
 # docs_node write to) at real URLs, e.g. /workspace/cli.py — so the dashboard
 # can link to the real generated files instead of only holding JS-side
 # copies of what streamed over SSE.
-os.makedirs(TARGET_PROJECT_DIR, exist_ok=True)
-app.mount("/workspace", StaticFiles(directory=TARGET_PROJECT_DIR), name="workspace")
+WORKSPACE_DIR = settings.workspace_dir()
+os.makedirs(WORKSPACE_DIR, exist_ok=True)
+app.mount("/workspace", StaticFiles(directory=WORKSPACE_DIR), name="workspace")
 
 
 @app.get("/")
@@ -55,17 +57,12 @@ def download_workspace_zip(
     for the run just completed) into a zip — not everything that has ever
     accumulated in the workspace across past runs, since nothing clears that
     directory between runs."""
-    workspace_root = os.path.realpath(TARGET_PROJECT_DIR)
-
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
         for rel_path in files:
-            full_path = os.path.realpath(os.path.join(workspace_root, rel_path))
-            # Reject anything that escapes the workspace dir (path traversal
-            # via "../", or an absolute path that os.path.join lets through).
-            if full_path != workspace_root and not full_path.startswith(workspace_root + os.sep):
-                continue
-            if os.path.isfile(full_path):
+            # Skips anything that escapes the workspace ("../", absolute paths).
+            full_path = resolve_in_workspace(WORKSPACE_DIR, rel_path)
+            if full_path and os.path.isfile(full_path):
                 zf.write(full_path, rel_path)
     buf.seek(0)
 

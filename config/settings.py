@@ -25,6 +25,16 @@ REQUEST_TIMEOUT_SECONDS = 600
 # since it only needs to prove the entry point starts cleanly.
 TEST_EXEC_TIMEOUT_SECONDS = 15
 
+
+def workspace_dir() -> str:
+    """Where generated files are written and executed. Read on every call
+    rather than once at import, so tests and the benchmark runner can point
+    each run at its own directory via AI_TEAM_WORKSPACE."""
+    return os.path.abspath(
+        os.environ.get("AI_TEAM_WORKSPACE", os.path.join(os.getcwd(), "workspace"))
+    )
+
+
 PROMPTS_DIR = os.path.join(os.path.dirname(__file__), "..", "prompts")
 MEMORY_DB_PATH = os.path.join(os.path.dirname(__file__), "..", "memory", "project_state.db")
 

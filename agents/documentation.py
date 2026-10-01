@@ -5,6 +5,7 @@ import os
 from datetime import datetime
 
 from agents.base import BaseAgent
+from config import settings
 from schemas.state import ProjectState, ProjectStatus
 from schemas.documentation import DocumentationOutput
 from schemas.messages import AgentMessage, MessageType
@@ -12,19 +13,17 @@ from utils import context as ctx
 
 SENDER = "documentation"
 
-TARGET_PROJECT_DIR = os.environ.get("AI_TEAM_WORKSPACE", os.path.join(os.getcwd(), "workspace"))
-
-
 def _write_docs_to_disk(output: DocumentationOutput) -> None:
-    os.makedirs(TARGET_PROJECT_DIR, exist_ok=True)
+    workspace = settings.workspace_dir()
+    os.makedirs(workspace, exist_ok=True)
 
     if output.readme_updates:
-        readme_path = os.path.join(TARGET_PROJECT_DIR, "README.md")
+        readme_path = os.path.join(workspace, "README.md")
         with open(readme_path, "a", encoding="utf-8") as f:
             f.write("\n\n" + output.readme_updates + "\n")
 
     if output.changelog_entries:
-        changelog_path = os.path.join(TARGET_PROJECT_DIR, "CHANGELOG.md")
+        changelog_path = os.path.join(workspace, "CHANGELOG.md")
         date = datetime.now().strftime("%Y-%m-%d")
         with open(changelog_path, "a", encoding="utf-8") as f:
             f.write(f"\n## {date}\n")

@@ -20,11 +20,10 @@ from config import settings
 from schemas.messages import AgentMessage, MessageType
 from schemas.state import ProjectState
 from schemas.testing import TestCheck, TestReport
+from tools.filesystem import resolve_in_workspace
 from utils import context as ctx
 
 SENDER = "testing_agent"
-
-TARGET_PROJECT_DIR = os.environ.get("AI_TEAM_WORKSPACE", os.path.join(os.getcwd(), "workspace"))
 
 
 def _check_syntax(full_path: str, rel_path: str) -> TestCheck:
@@ -42,7 +41,7 @@ def _check_import(full_path: str, rel_path: str) -> TestCheck:
     try:
         result = subprocess.run(
             [sys.executable, "-c", f"import {module}"],
-            cwd=TARGET_PROJECT_DIR,
+            cwd=settings.workspace_dir(),
             capture_output=True,
             text=True,
             timeout=settings.TEST_EXEC_TIMEOUT_SECONDS,
@@ -66,7 +65,7 @@ def _check_smoke_run(full_path: str, rel_path: str) -> TestCheck | None:
     try:
         result = subprocess.run(
             [sys.executable, full_path, "--help"],
-            cwd=TARGET_PROJECT_DIR,
+            cwd=settings.workspace_dir(),
             capture_output=True,
             text=True,
             timeout=settings.TEST_EXEC_TIMEOUT_SECONDS,
@@ -94,8 +93,8 @@ def testing_node(state: ProjectState) -> dict:
     for change in impl_payload.get("files_changed", []):
         if change.get("action") == "delete" or not change["path"].endswith(".py"):
             continue
-        full_path = os.path.join(TARGET_PROJECT_DIR, change["path"])
-        if not os.path.exists(full_path):
+        full_path = resolve_in_workspace(settings.workspace_dir(), change["path"])
+        if full_path is None or not os.path.exists(full_path):
             continue
 
         syntax_check = _check_syntax(full_path, change["path"])
