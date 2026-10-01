@@ -103,6 +103,7 @@
 
   .scenario-block { display: flex; flex-direction: column; gap: 10px; }
   .scenario-label { font-size: 14px; font-weight: 700; letter-spacing: -0.005em; color: var(--text); }
+  .input-hint { margin: -4px 0 0; font-size: 11.5px; line-height: 1.55; color: var(--text-dim); max-width: 78ch; }
 
   .request-input {
     width: 100%; resize: vertical; min-height: 52px;
@@ -289,9 +290,10 @@
   .files-note { margin: 0; font-size: 11px; line-height: 1.5; color: var(--text-dim); }
   .files-note code { font-family: var(--mono); color: var(--text-muted); }
 
+  .files-toolbar { display: flex; }
   .file-preview-wrap { display: flex; flex-direction: column; gap: 8px; }
   .file-preview-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-  .file-preview-name { font-family: var(--mono); font-size: 10.5px; font-weight: 700; color: var(--text); }
+  .file-preview-name { font-family: var(--mono); font-size: 10.5px; font-weight: 700; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .download-btn {
     font-family: var(--mono); font-size: 10px; font-weight: 600;
     padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border); background: var(--surface);
@@ -400,6 +402,11 @@
 
       <div class="scenario-block">
         <span class="scenario-label">Describe what you want built</span>
+        <p class="input-hint">
+          Works best for well-scoped CLI tools, scripts, or small libraries — a handful of clear tasks,
+          one or a few files. This pipeline doesn't provision infrastructure or databases and has no
+          DevOps agent yet, so keep requests to something a small team could actually hand-code in a sitting.
+        </p>
         <textarea id="requestInput" class="request-input" rows="2" spellcheck="false">Build a CLI tool that converts CSV files to JSON.</textarea>
         <div class="example-row" id="exampleRow"></div>
         <div class="cta-row">
@@ -511,15 +518,17 @@
 
         <div class="panel">
           <h4>Generated Files <span class="count" id="filesCount">0 files</span></h4>
-          <p class="files-note">Real content from this run, streamed as each task is implemented — also written to <code>workspace/</code> on disk by the backend.</p>
+          <p class="files-note">These are real files this run wrote to disk under <code>workspace/</code>, served live by the backend — not copies held only in the browser.</p>
+          <div class="files-toolbar">
+            <button class="download-btn" id="downloadZipBtn" disabled>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/></svg>
+              Download .zip
+            </button>
+          </div>
           <div class="trail-strip" id="filesStrip"></div>
           <div class="file-preview-wrap">
             <div class="file-preview-head">
               <span class="file-preview-name" id="filePreviewName">—</span>
-              <button class="download-btn" id="downloadFileBtn" disabled>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
-                <span id="downloadFileBtnLabel">Copy</span>
-              </button>
             </div>
             <div class="file-preview" id="filePreview">
               <p class="file-preview-empty">No files yet.</p>
@@ -712,8 +721,7 @@
   const filesCount = document.getElementById("filesCount");
   const filePreview = document.getElementById("filePreview");
   const filePreviewName = document.getElementById("filePreviewName");
-  const downloadFileBtn = document.getElementById("downloadFileBtn");
-  const downloadFileBtnLabel = document.getElementById("downloadFileBtnLabel");
+  const downloadZipBtn = document.getElementById("downloadZipBtn");
   const logsTableWrap = document.getElementById("logsTableWrap");
   const logsSummary = document.getElementById("logsSummary");
   const clearLogsBtn = document.getElementById("clearLogsBtn");
@@ -725,7 +733,21 @@
   let taskCriteria = {};
   let running = false;
   let evtSource = null;
+  let currentZipName = "workspace";
   const ORIGINAL_HINT = ctaHint.innerHTML;
+
+  const SLUG_STOPWORDS = new Set([
+    "a", "an", "the", "that", "to", "of", "with", "for", "from", "and", "in", "on",
+    "build", "create", "make", "tool", "please", "using", "into",
+  ]);
+  function slugifyRequest(text) {
+    const words = text
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, " ")
+      .split(/\s+/)
+      .filter((w) => w && !SLUG_STOPWORDS.has(w));
+    return words.slice(0, 6).join("-") || "workspace";
+  }
 
   function renderExamples() {
     exampleRow.innerHTML = "";
@@ -744,30 +766,8 @@
     filesStrip.innerHTML = "";
     filesCount.textContent = "0 files";
     filePreviewName.textContent = "—";
-    downloadFileBtn.disabled = true;
-    downloadFileBtnLabel.textContent = "Copy";
+    downloadZipBtn.disabled = true;
     filePreview.innerHTML = '<p class="file-preview-empty">No files yet.</p>';
-  }
-
-  async function copyToClipboard(text) {
-    try {
-      await navigator.clipboard.writeText(text);
-      return true;
-    } catch (e) {
-      try {
-        const ta = document.createElement("textarea");
-        ta.value = text;
-        ta.style.position = "fixed";
-        ta.style.opacity = "0";
-        document.body.appendChild(ta);
-        ta.select();
-        document.execCommand("copy");
-        ta.remove();
-        return true;
-      } catch (e2) {
-        return false;
-      }
-    }
   }
 
   function selectFile(path) {
@@ -775,17 +775,19 @@
     const file = files.find((f) => f.path === path);
     if (!file) return;
     filePreviewName.textContent = file.path;
-    downloadFileBtn.disabled = false;
-    downloadFileBtn.onclick = async () => {
-      const ok = await copyToClipboard(file.content);
-      downloadFileBtnLabel.textContent = ok ? "Copied" : "Copy failed";
-      setTimeout(() => { downloadFileBtnLabel.textContent = "Copy"; }, 1300);
-    };
     const pre = document.createElement("pre");
     pre.textContent = file.content;
     filePreview.innerHTML = "";
     filePreview.appendChild(pre);
   }
+
+  downloadZipBtn.addEventListener("click", () => {
+    if (downloadZipBtn.disabled || !files.length) return;
+    const params = new URLSearchParams();
+    files.forEach((f) => params.append("files", f.path));
+    params.set("name", currentZipName);
+    window.location.href = `/download.zip?${params.toString()}`;
+  });
 
   function addGeneratedFile(path, content) {
     if (content === undefined || content === null) return;
@@ -803,6 +805,7 @@
       chip.addEventListener("click", () => selectFile(path));
       filesStrip.appendChild(chip);
       filesCount.textContent = `${files.length} file${files.length === 1 ? "" : "s"}`;
+      downloadZipBtn.disabled = false;
     }
     selectFile(path);
   }
@@ -959,8 +962,8 @@
       }
     } else if (msg.message_type === "documentation") {
       addTrail({ kind: "docs", agent: "Documentation", title: "Docs Written", changelog: p.changelog_entries || [], summary: p.user_summary });
-      if (p.readme_updates) addGeneratedFile("README.md (appended)", p.readme_updates);
-      if (p.changelog_entries && p.changelog_entries.length) addGeneratedFile("CHANGELOG.md (appended)", p.changelog_entries.map((c) => `- ${c}`).join("\n"));
+      if (p.readme_updates) addGeneratedFile("README.md", p.readme_updates);
+      if (p.changelog_entries && p.changelog_entries.length) addGeneratedFile("CHANGELOG.md", p.changelog_entries.map((c) => `- ${c}`).join("\n"));
       setCard("docs", "settled", "complete");
     }
   }
@@ -1013,6 +1016,7 @@
     resetFiles();
     taskCriteria = {};
     updateTaskStrip([]);
+    currentZipName = slugifyRequest(requestText);
     currentRunStats = {
       ts: new Date().toISOString(),
       requestLabel: requestText.length > 60 ? requestText.slice(0, 60) + "…" : requestText,
