@@ -3,6 +3,7 @@ in agents/*.py, all routing logic lives in graph/routing.py."""
 from langgraph.graph import StateGraph, START, END
 from langgraph.checkpoint.base import BaseCheckpointSaver
 
+from config import settings
 from schemas.state import ProjectState
 from agents.project_manager import pm_plan_node, pm_check_node
 from agents.software_engineer import swe_node
@@ -12,12 +13,15 @@ from agents.documentation import docs_node
 from graph.routing import route_after_pm_plan, route_after_swe, route_after_qa, route_after_pm_check
 
 
-def build_graph(checkpointer: BaseCheckpointSaver | None = None):
+def build_graph(checkpointer: BaseCheckpointSaver | None = None, enable_testing: bool | None = None):
+    if enable_testing is None:
+        enable_testing = settings.ENABLE_TESTING_AGENT
     graph = StateGraph(ProjectState)
 
     graph.add_node("pm_plan", pm_plan_node)
     graph.add_node("swe", swe_node)
-    graph.add_node("testing", testing_node)
+    if enable_testing:
+        graph.add_node("testing", testing_node)
     graph.add_node("qa", qa_node)
     graph.add_node("pm_check", pm_check_node)
     graph.add_node("docs", docs_node)
@@ -25,10 +29,15 @@ def build_graph(checkpointer: BaseCheckpointSaver | None = None):
     graph.add_edge(START, "pm_plan")
     graph.add_conditional_edges("pm_plan", route_after_pm_plan, {"swe": "swe", "docs": "docs"})
 
+    # With testing disabled (benchmark ablation), "testing" routes straight
+    # to qa, which then reviews by inspection only.
     graph.add_conditional_edges(
-        "swe", route_after_swe, {"testing": "testing", "pm_plan": "pm_plan", "pm_check": "pm_check"}
+        "swe",
+        route_after_swe,
+        {"testing": "testing" if enable_testing else "qa", "pm_plan": "pm_plan", "pm_check": "pm_check"},
     )
-    graph.add_edge("testing", "qa")  # unconditional: testing never decides routing, only writes evidence
+    if enable_testing:
+        graph.add_edge("testing", "qa")  # unconditional: testing never decides routing, only writes evidence
     graph.add_conditional_edges(
         "qa", route_after_qa, {"swe": "swe", "pm_check": "pm_check"}
     )

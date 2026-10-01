@@ -92,7 +92,7 @@ def start_run(request: str = Query(..., min_length=1)):
         initial_state = ProjectState.new(user_request=request)
         config = {
             "configurable": {"thread_id": str(uuid.uuid4())},
-            "recursion_limit": 100,
+            "recursion_limit": settings.GRAPH_RECURSION_LIMIT,
         }
 
         seen = 0

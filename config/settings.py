@@ -13,10 +13,26 @@ GROQ_BASE_URL = os.environ.get(
 )
 GROQ_MODEL_NAME = os.environ.get("GROQ_MODEL_NAME", "llama-3.3-70b-versatile")
 
-MAX_TRANSPORT_RETRIES = 3       # network/timeout retries per Ollama call
+MAX_TRANSPORT_RETRIES = int(os.environ.get("AI_TEAM_TRANSPORT_RETRIES", 3))  # network/timeout/429 retries per call
 MAX_SCHEMA_RETRIES = 2          # re-prompt retries on invalid JSON / schema mismatch
 MAX_REVIEW_ITERATIONS = 3       # QA fail-loop cap, per task
 MAX_CLARIFICATION_ROUNDS = 2    # PM clarification-loop cap
+
+# A 429 asking us to wait longer than this is a quota that won't reset soon
+# (e.g. a daily token limit), so fail fast instead of sleeping for hours.
+MAX_RATE_LIMIT_WAIT_SECONDS = 120
+
+# LangGraph steps per run. Every loop is already capped (review and
+# clarification caps above), so this only has to be comfortably above the
+# longest legitimate run. Each task takes 4 steps (swe, testing, qa,
+# pm_check) plus 3 per QA retry, so LangGraph's default of 25 is already
+# exceeded by a 6-task plan, or a 4-task plan with two retries.
+GRAPH_RECURSION_LIMIT = 500
+
+# Turning the Testing Agent off sends swe straight to qa, i.e. QA reviews by
+# inspection only (the original v1 behaviour). Exists for the benchmark's
+# ablation; leave it on otherwise.
+ENABLE_TESTING_AGENT = os.environ.get("AI_TEAM_TESTING", "on") != "off"
 
 REQUEST_TIMEOUT_SECONDS = 600
 

@@ -8,6 +8,7 @@ provider.
 """
 import json
 from abc import ABC, abstractmethod
+from collections import Counter
 from typing import TypeVar
 
 from pydantic import BaseModel, ValidationError
@@ -17,8 +18,19 @@ from config import settings
 T = TypeVar("T", bound=BaseModel)
 
 
+# Process-wide usage counters (calls, schema_retries, prompt_tokens,
+# completion_tokens). The benchmark runs one pipeline per process and reads
+# these at the end; nothing in the pipeline itself depends on them.
+USAGE: Counter = Counter()
+
+
 class LLMTransportError(RuntimeError):
     """Raised when a provider call fails after all transport retries."""
+
+
+class LLMQuotaExhaustedError(LLMTransportError):
+    """Raised when the provider's rate limit won't reset soon enough to wait
+    for (e.g. a daily token quota), so retrying now is pointless."""
 
 
 class LLMSchemaError(RuntimeError):
@@ -62,11 +74,13 @@ class LLMClient(ABC):
 
         for attempt in range(max_schema_retries + 1):
             raw = self.call(system_prompt, prompt, temperature=temperature)
+            USAGE["calls"] += 1
             try:
                 parsed = json.loads(raw)
                 return output_model.model_validate(parsed)
             except (json.JSONDecodeError, ValidationError) as e:
                 last_error = e
+                USAGE["schema_retries"] += 1
                 prompt = (
                     f"{user_prompt}\n\n"
                     f"--- CORRECTION REQUIRED ---\n"

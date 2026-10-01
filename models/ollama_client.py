@@ -10,7 +10,7 @@ import time
 import requests
 
 from config import settings
-from models.llm_client import LLMClient, LLMTransportError
+from models.llm_client import USAGE, LLMClient, LLMTransportError
 
 
 class OllamaClient(LLMClient):
@@ -50,6 +50,8 @@ class OllamaClient(LLMClient):
                 resp = requests.post(self.base_url, json=payload, timeout=self.timeout)
                 resp.raise_for_status()
                 data = resp.json()
+                USAGE["prompt_tokens"] += data.get("prompt_eval_count", 0)
+                USAGE["completion_tokens"] += data.get("eval_count", 0)
                 return data["message"]["content"]
             except (requests.RequestException, KeyError, json.JSONDecodeError) as e:
                 last_error = e

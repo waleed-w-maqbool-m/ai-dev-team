@@ -26,7 +26,7 @@ def run(user_request: str, thread_id: str | None = None) -> ProjectState:
     with SqliteSaver.from_conn_string(settings.MEMORY_DB_PATH) as checkpointer:
         app = build_graph(checkpointer=checkpointer)
         initial_state = ProjectState.new(user_request=user_request)
-        config = {"configurable": {"thread_id": thread_id}}
+        config = {"configurable": {"thread_id": thread_id}, "recursion_limit": settings.GRAPH_RECURSION_LIMIT}
         result = app.invoke(initial_state, config=config)
         final_state = ProjectState.model_validate(result)
 

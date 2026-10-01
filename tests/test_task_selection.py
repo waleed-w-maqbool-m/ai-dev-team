@@ -26,7 +26,8 @@ def _task(task_id: str, depends_on: list[str] | None = None, **extra) -> Task:
     )
 
 
-def _run(monkeypatch, tasks, pm_check=None, qa_passes=lambda task_id: True):
+def _run(monkeypatch, tasks, pm_check=None, qa_passes=lambda task_id: True,
+         recursion_limit=60, enable_testing=True):
     """Runs the real graph with a scripted LLM. Returns (final state, ids of
     tasks the Engineer was asked to implement, in order)."""
     implemented: list[str] = []
@@ -52,10 +53,10 @@ def _run(monkeypatch, tasks, pm_check=None, qa_passes=lambda task_id: True):
         raise AssertionError(output_model)
 
     monkeypatch.setattr(base_module.BaseAgent, "run", fake_run)
-    app = build_graph(checkpointer=None)
+    app = build_graph(checkpointer=None, enable_testing=enable_testing)
     result = app.invoke(
         ProjectState.new(user_request="test"),
-        config={"configurable": {"thread_id": "t"}, "recursion_limit": 60},
+        config={"configurable": {"thread_id": "t"}, "recursion_limit": recursion_limit},
     )
     return ProjectState.model_validate(result), implemented
 
@@ -124,3 +125,27 @@ def test_first_task_is_the_first_runnable_one_not_list_order(monkeypatch):
 def test_plan_echoing_done_status_is_reset_to_pending(monkeypatch):
     _, implemented = _run(monkeypatch, [_task("T1", status=TaskStatus.done), _task("T2", ["T1"])])
     assert implemented == ["T1", "T2"]
+
+
+def test_long_plan_with_retries_fits_the_recursion_limit(monkeypatch):
+    # 8 tasks, each failing QA once: ~60 graph steps, well past LangGraph's
+    # default limit of 25 that main.py used to run with.
+    from config import settings
+    tasks = [_task(f"T{i}") for i in range(1, 9)]
+    reviewed: set[str] = set()
+
+    def qa_passes(task_id):
+        first_time = task_id not in reviewed
+        reviewed.add(task_id)
+        return not first_time
+
+    state, implemented = _run(monkeypatch, tasks, qa_passes=qa_passes, recursion_limit=settings.GRAPH_RECURSION_LIMIT)
+    assert len(implemented) == 16
+    assert all(t.status == TaskStatus.done for t in state.tasks)
+
+
+def test_testing_agent_can_be_switched_off_for_the_ablation(monkeypatch):
+    state, implemented = _run(monkeypatch, [_task("T1")], enable_testing=False)
+    assert implemented == ["T1"]
+    assert "test_report" not in [m.message_type.value for m in state.messages]
+    assert state.project_status == ProjectStatus.complete

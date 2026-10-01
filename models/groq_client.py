@@ -11,7 +11,7 @@ import time
 import requests
 
 from config import settings
-from models.llm_client import LLMClient, LLMTransportError
+from models.llm_client import USAGE, LLMClient, LLMQuotaExhaustedError, LLMTransportError
 
 
 class GroqClient(LLMClient):
@@ -65,11 +65,20 @@ class GroqClient(LLMClient):
                 )
                 resp.raise_for_status()
                 data = resp.json()
+                usage = data.get("usage") or {}
+                USAGE["prompt_tokens"] += usage.get("prompt_tokens", 0)
+                USAGE["completion_tokens"] += usage.get("completion_tokens", 0)
                 return data["choices"][0]["message"]["content"]
             except requests.HTTPError as e:
                 last_error = e
+                delay = self._retry_delay(e.response, attempt)
+                if delay > settings.MAX_RATE_LIMIT_WAIT_SECONDS:
+                    raise LLMQuotaExhaustedError(
+                        f"Groq rate limit for {self.model} resets in {delay:.0f}s "
+                        f"(likely a daily quota): {e}"
+                    ) from e
                 if attempt < max_retries - 1:
-                    time.sleep(self._retry_delay(e.response, attempt))
+                    time.sleep(delay)
             except (requests.RequestException, KeyError, IndexError, ValueError) as e:
                 last_error = e
                 if attempt < max_retries - 1:
