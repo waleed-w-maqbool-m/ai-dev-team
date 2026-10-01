@@ -96,3 +96,13 @@ Add a class in `models/` implementing `LLMClient.call()` (see `models/groq_clien
 - Tasks are processed strictly sequentially — no parallel task execution.
 - Clarification resolution re-plans by replacing the entire task list rather than surgically patching one task.
 - Without a Docker daemon, the Testing Agent falls back to a host subprocess (scrubbed env, no stdin, timeout) — **not isolated**. It also only checks that code parses, imports, and starts cleanly; behavioural testing exists only in the benchmark's hidden tests (`bench/`), used for scoring, not fed back to the agents.
+
+## Web console (`frontend/`)
+
+Vite + React 19 + TypeScript + React Three Fiber + GSAP + Lenis. `npm run build` → `frontend/dist`, served by `api.py` (SPA fallback; `/api/health`, `/api/replays`, `/api/benchmark`, `/runs` SSE). Design decisions and tokens live in `docs/creative-brief.md` — read it before changing visuals.
+
+- One persistent canvas (`src/scene/Stage.tsx`); `src/scene/Director.tsx` is the only place camera/activity is decided, from `sceneSignals.mode` (story = scroll position "story time" 0..5, theater = the run store, page = idle).
+- Per-frame values go through `sceneSignals` / `stage` (mutable, read in `useFrame`), never React state.
+- `src/data/runReducer.ts` folds agent messages into what the UI shows; live SSE and replays both go through it. Replays are JSON files handled by `utils/replays.py` (`memory/replays/`, `bench/runs/**/replay.json`, `frontend/public/replays/` = published).
+- `src/scene/storyScript.ts` drives both the Story page's 3D and its captions, so they can't drift.
+- QA: `python api.py`, then `python frontend/qa/qa.py qa/<run>` (needs `pip install playwright` and Edge). `?qa` in the URL exposes `window.__scene` for tests.

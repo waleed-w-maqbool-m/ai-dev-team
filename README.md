@@ -133,14 +133,38 @@ JSONL under `memory/logs/`.
 ### Web console
 
 ```bash
-python api.py      # then open http://127.0.0.1:8000
+cd frontend && npm install && npm run build && cd ..   # once, and after frontend changes
+python api.py                                          # then open http://127.0.0.1:8000
 ```
 
-A local dashboard that streams a real run over Server-Sent Events: each
-agent's progress, the Testing Agent's checks (and which sandbox ran them), QA
-findings, the generated files, and a zip download of them. It binds to
-`127.0.0.1` only — it executes model-written code, so never expose it
-publicly.
+A React + three.js console (`frontend/`) around one persistent 3D stage:
+five sculptural stations, one per agent, joined by light ribbons along the
+graph's real edges. Work packets travel between them as agents hand off; a
+QA rejection sends one back along the retry arc in red.
+
+- **Story** — a scroll-driven walkthrough: meet each agent (with a real line
+  from its prompt), then follow one packet through the graph, rejection
+  included, beside the routing code that decides each hop.
+- **Theater** — watch a run. *Run live* streams a real pipeline run over
+  Server-Sent Events; *Replay* plays back any recorded run through the same
+  stage, with each agent's real output (plan, code, test checks, QA findings)
+  in the side panel, a seekable timeline, and hold-to-fast-forward.
+- **Runs** — every recorded run (web console, `main.py`, benchmark), each
+  replayable. Runs are saved automatically as replays.
+- **Benchmark** — the real numbers from `bench/results`, or an explicit "not
+  measured yet".
+
+It respects `prefers-reduced-motion` (plus an on-page toggle), works by
+keyboard, falls back to a static poster without WebGL, and steps quality
+down on slow GPUs. `frontend/qa/qa.py` is its Playwright verification loop
+(screenshots at three sizes, scroll video, FPS, GPU memory, axe, reduced
+motion, no-WebGL). The design brief is in
+[`docs/creative-brief.md`](docs/creative-brief.md).
+
+The server binds to `127.0.0.1` only — it executes model-written code, so
+never expose it publicly. A **replay-only** static build (no backend, no
+key) can be published to GitHub Pages with the `pages` workflow;
+`scripts/export_static_data.py` chooses which replays it includes.
 
 ### Configuration
 
@@ -185,7 +209,7 @@ fallback.
 | `tools/` | Side effects: writing files (`filesystem.py`), running generated code (`sandbox.py`) |
 | `utils/` | Per-agent context slicing and the message logger |
 | `bench/` | Benchmark tasks, hidden tests, reference solutions, runner and report |
-| `dashboard/`, `api.py` | Local web console and its FastAPI/SSE backend |
+| `frontend/`, `api.py` | Web console (React, three.js, GSAP) and its FastAPI/SSE backend; `frontend/qa/` is its Playwright QA loop |
 | `tests/` | pytest suite |
 
 ## Known limitations

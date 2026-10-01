@@ -13,3 +13,11 @@ memory/logs/
 .env
 bench/runs/
 .pytest_cache/
+
+# Reference screenshots of third-party sites (local only)
+docs/moodboard/
+
+# Frontend build output and QA artefacts
+frontend/node_modules/
+frontend/dist/
+qa/

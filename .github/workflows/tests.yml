@@ -28,3 +28,18 @@ jobs:
       - if: matrix.sandbox == 'docker'
         run: docker pull python:3.12-slim
       - run: pytest -rs
+
+  frontend:
+    runs-on: ubuntu-latest
+    name: frontend typecheck + build
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+        working-directory: frontend
+      - run: npm run build
+        working-directory: frontend

@@ -1,0 +1,15 @@
+.page .page-head { position: relative; }
+.page-head, .table-wrap, .bench-empty, .bench-sub { position: relative; }
+.library__note { margin: 6px 0 0; text-transform: none; letter-spacing: 0.02em; font-size: 10.5px; }
+.bench-empty { max-width: 760px; padding: 28px; display: grid; gap: 14px; }
+.bench-empty p { margin: 0; }
+.bench-empty__title { font-size: 44px; line-height: 1; }
+.bench-big { font-family: var(--font-display); font-size: 28px; }
+.bench-sub { margin: 56px 0 12px; font-weight: 400; }
+.stage-poster {
+  background:
+    radial-gradient(60% 50% at 50% 70%, rgba(255, 91, 31, 0.12), transparent 70%),
+    var(--bg) url("/poster.jpg") center 60% / cover no-repeat;
+}
+
+@media (max-width: 760px) { .library__request { font-size: 16px; margin-bottom: 6px; } }

@@ -1,0 +1,16 @@
+[
+ {
+  "id": "2026-08-08-csv-to-json",
+  "request": "Build a CLI tool that converts CSV files to JSON.",
+  "recorded_at": "2026-08-08T07:09:55.442003Z",
+  "provider": null,
+  "model": null,
+  "source": "curated",
+  "note": "Recorded on 8 Aug 2026 with an earlier version of the pipeline, before the Testing Agent existed, so this run has no test reports. The model used wasn't recorded.",
+  "final_status": "complete",
+  "tasks_planned": 3,
+  "tasks_done": 3,
+  "message_count": 13,
+  "hidden_tests": null
+ }
+]

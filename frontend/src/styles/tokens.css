@@ -1,0 +1,42 @@
+/* Design tokens — docs/creative-brief.md is the source of truth. */
+:root {
+  /* Palette: Graphite & Signal */
+  --bg: #07080a;
+  --surface: #111317;
+  --surface-2: #171a1f;
+  --line: rgba(236, 234, 228, 0.09);
+  --line-strong: rgba(236, 234, 228, 0.18);
+  --text: #eceae4;
+  --text-muted: #9a9890;
+  --text-dim: #85837c; /* 5.1:1 on --bg, AA for small text */
+  --accent: #ff5b1f;
+  --accent-ink: #1a0a03;
+  --pass: #7ce0c3;
+  --glow: #ffb27a;
+  --fail: #ff3b4e;
+
+  /* Type */
+  --font-display: "Instrument Serif", "Times New Roman", serif;
+  --font-body: "Geist Variable", system-ui, sans-serif;
+  --font-mono: "Geist Mono Variable", ui-monospace, monospace;
+  --fs-display: clamp(56px, 9vw, 168px);
+  --fs-h2: clamp(40px, 5.5vw, 96px);
+  --fs-h3: clamp(26px, 2.6vw, 40px);
+  --fs-body: clamp(16px, 1.1vw, 18px);
+  --fs-mono: 11.5px;
+  --tracking-mono: 0.08em;
+
+  /* Space (4px base) & shape */
+  --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 24px; --s6: 32px;
+  --s7: 48px; --s8: 72px; --s9: 120px; --s10: 192px;
+  --radius: 2px;
+  --gutter: clamp(16px, 4vw, 56px);
+
+  /* Motion: "Precise machine" */
+  --ease-enter: cubic-bezier(0.16, 1, 0.3, 1);   /* expo.out */
+  --ease-hover: cubic-bezier(0.33, 1, 0.68, 1);  /* power2.out */
+  --dur-hover: 0.25s;
+  --dur-enter: 1s;
+
+  color-scheme: dark;
+}

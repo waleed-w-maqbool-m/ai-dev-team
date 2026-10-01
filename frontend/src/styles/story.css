@@ -1,0 +1,127 @@
+.accent { color: var(--accent); }
+.pass { color: var(--pass); }
+.fail { color: var(--fail); }
+.dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); margin-right: 8px; vertical-align: 1px; }
+
+/* clip (not hidden): the scrims can bleed past the edges without making the
+   page scroll sideways, and position: sticky keeps working. */
+.story__section { position: relative; min-height: 100svh; overflow-x: clip; }
+.story__section--proof { min-height: 150svh; }
+
+/* ---------- hero ---------- */
+.hero { position: relative; min-height: 100svh; display: flex; flex-direction: column; justify-content: center; padding: 96px var(--gutter) 72px; }
+/* overflow clips without creating a stacking context, so the weave survives */
+.hero-ribbon { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.hero-ribbon__layer { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.hero-ribbon__layer--back { z-index: 1; }
+.hero-ribbon__layer--front { z-index: 3; }
+.ribbon-core, .ribbon-glow { stroke-linecap: round; fill: none; }
+.hero__grid {
+  position: relative; z-index: 2;
+  display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: 24px; row-gap: 28px;
+}
+.hero__eyebrow { grid-column: 1 / -1; color: var(--text-muted); margin: 0; }
+.hero__title { grid-column: 1 / span 11; margin: 0; font-family: var(--font-display); font-weight: 400; font-size: var(--fs-display); line-height: 0.9; letter-spacing: -0.02em; }
+.hero__line { display: block; }
+.hero__line:nth-child(2) { padding-left: 0.9em; }
+.hero__title em { font-style: italic; color: var(--glow); }
+.hero__lede { grid-column: 7 / span 5; margin: 8px 0 0; color: var(--text-muted); max-width: 46ch; }
+.hero__ctas { grid-column: 7 / span 6; display: flex; flex-wrap: wrap; gap: 14px; }
+.hero__scroll { position: absolute; left: var(--gutter); bottom: 28px; margin: 0; z-index: 2; }
+
+/* ---------- team ---------- */
+.team {
+  height: 100svh; display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: 24px;
+  align-items: center; padding: 96px var(--gutter) 64px;
+}
+.team__copy { grid-column: 1 / span 5; display: grid; gap: 20px; }
+.team__count { margin: 0; }
+.team__name { margin: 0; font-family: var(--font-display); font-weight: 400; font-size: var(--fs-h2); line-height: 0.95; }
+.team__job { margin: 0; font-size: clamp(18px, 1.6vw, 24px); line-height: 1.4; max-width: 30ch; }
+.team__quote { margin: 8px 0 0; padding-left: 16px; border-left: 1px solid var(--accent); display: grid; gap: 8px; animation: fade-in 0.8s var(--ease-enter); }
+.team__quote blockquote { margin: 0; text-transform: none; letter-spacing: 0.01em; font-size: 13px; line-height: 1.6; color: var(--text); max-width: 46ch; }
+.team__quote figcaption { text-transform: none; letter-spacing: 0.02em; }
+.team__rail {
+  grid-column: 12 / span 1; justify-self: end; list-style: none; margin: 0; padding: 0;
+  display: grid; gap: 14px; text-align: right;
+}
+.team__rail li { color: var(--text-dim); transition: color 0.3s; }
+.team__rail li[data-done] { color: var(--text-muted); }
+.team__rail li[data-active] { color: var(--accent); }
+.team__rail li[data-active]::before { content: "— "; }
+
+/* ---------- line ---------- */
+.line {
+  height: 100svh; display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: 24px;
+  align-content: end; padding: 96px var(--gutter) 56px; row-gap: 24px;
+}
+.line__copy { grid-column: 1 / span 6; display: grid; gap: 16px; align-self: end; }
+.line__copy > p { margin: 0; }
+.line__title { margin: 0; font-family: var(--font-display); font-weight: 400; font-size: var(--fs-h3); line-height: 1; }
+.line__title em, .proof__title em, .enter__title em { font-style: italic; color: var(--glow); }
+.line__caption { margin: 0; font-size: clamp(18px, 1.5vw, 22px); line-height: 1.4; max-width: 34ch; min-height: 2.8em; transition: color 0.3s; }
+.line__caption--fail { color: var(--fail); }
+.line__caption--pass { color: var(--pass); }
+.line__progress { display: flex; gap: 6px; }
+.line__progress span { width: 28px; height: 2px; background: var(--line-strong); transition: background 0.3s; }
+.line__progress span[data-on] { background: var(--accent); }
+.line__progress span[data-on][data-kind="reject"] { background: var(--fail); }
+.line__progress span[data-on][data-kind="pass"] { background: var(--pass); }
+.line__code {
+  grid-column: 8 / span 5; align-self: end; margin: 0; padding: 18px 20px;
+  background: rgba(11, 12, 15, 0.86); border: 1px solid var(--line); border-radius: var(--radius);
+}
+.line__code figcaption { margin-bottom: 12px; }
+.line__code pre { margin: 0; font-family: var(--font-mono); font-size: 12px; line-height: 1.7; overflow-x: auto; }
+.code-line { display: block; color: var(--text-dim); transition: color 0.3s, background 0.3s; padding-left: 10px; border-left: 2px solid transparent; }
+.code-line[data-hot] { color: var(--text); border-left-color: var(--accent); background: rgba(255, 91, 31, 0.07); }
+
+/* ---------- proof ---------- */
+.proof { position: sticky; top: 0; min-height: 100svh; padding: 120px var(--gutter) 72px; display: grid; align-content: center; gap: 48px; }
+.proof__title { margin: 0; font-family: var(--font-display); font-weight: 400; font-size: var(--fs-h2); line-height: 0.95; }
+.proof__facts { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; border-top: 1px solid var(--line-strong); }
+.proof__facts li { display: grid; gap: 12px; padding: 24px 24px 0 0; border-right: 1px solid var(--line); margin-right: 24px; }
+.proof__facts li:last-child { border-right: 0; }
+.proof__big { font-family: var(--font-display); font-size: clamp(56px, 6vw, 104px); line-height: 0.9; }
+.proof__text { color: var(--text-muted); max-width: 26ch; }
+.proof__sandbox { margin: 0; text-transform: none; letter-spacing: 0.02em; max-width: 90ch; }
+
+/* ---------- enter ---------- */
+.enter { min-height: 100svh; display: grid; align-content: end; justify-items: start; gap: 24px; padding: 96px var(--gutter) 120px; }
+.enter__title { margin: 0; font-family: var(--font-display); font-weight: 400; font-size: var(--fs-display); line-height: 0.9; }
+.enter__lede { margin: 0; max-width: 44ch; }
+
+@keyframes fade-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+@media (max-width: 900px) {
+  .hero__title { grid-column: 1 / -1; }
+  .hero__lede, .hero__ctas { grid-column: 1 / -1; }
+  .team { align-items: end; }
+  .team__copy { grid-column: 1 / -1; background: linear-gradient(to top, rgba(7, 8, 10, 0.92) 60%, transparent); padding-top: 40px; }
+  .team__rail { display: none; }
+  .line__copy, .line__code { grid-column: 1 / -1; }
+  .line { align-content: end; }
+  .line__code pre { font-size: 10.5px; }
+  .proof__facts { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: 28px; }
+  .proof__facts li:nth-child(2) { border-right: 0; }
+}
+@media (max-width: 520px) {
+  .hero__line:nth-child(2) { padding-left: 0; }
+  .line__code { display: none; }
+  .proof__facts { grid-template-columns: 1fr; }
+  .proof__facts li { border-right: 0; margin-right: 0; }
+}
+
+/* Legibility scrims: the stage keeps moving behind the copy, so text gets a
+   soft local backdrop instead of a box. */
+.team__copy, .line__copy {
+  position: relative;
+}
+.team__copy::before, .line__copy::before, .proof::before {
+  content: ""; position: absolute; z-index: -1; pointer-events: none;
+  background: radial-gradient(closest-side, rgba(7, 8, 10, 0.82), rgba(7, 8, 10, 0.55) 60%, transparent);
+}
+.team__copy::before { inset: -18% -30% -18% -40%; }
+.line__copy::before { inset: -30% -25% -20% -35%; }
+.proof { isolation: isolate; }
+.proof::before { inset: 10% -10% 25% -10%; }

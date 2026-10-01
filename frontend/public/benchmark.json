@@ -1,0 +1,68 @@
+{
+ "generated_at": null,
+ "task_count": 12,
+ "case_count": 66,
+ "configs": [],
+ "per_task": [
+  {
+   "task": "wordfreq",
+   "difficulty": "easy",
+   "results": {}
+  },
+  {
+   "task": "csv2json",
+   "difficulty": "easy",
+   "results": {}
+  },
+  {
+   "task": "roman",
+   "difficulty": "easy",
+   "results": {}
+  },
+  {
+   "task": "calc",
+   "difficulty": "hard",
+   "results": {}
+  },
+  {
+   "task": "duration",
+   "difficulty": "medium",
+   "results": {}
+  },
+  {
+   "task": "logstats",
+   "difficulty": "medium",
+   "results": {}
+  },
+  {
+   "task": "urlparts",
+   "difficulty": "medium",
+   "results": {}
+  },
+  {
+   "task": "vigenere",
+   "difficulty": "easy",
+   "results": {}
+  },
+  {
+   "task": "stats",
+   "difficulty": "easy",
+   "results": {}
+  },
+  {
+   "task": "lru_cache",
+   "difficulty": "medium",
+   "results": {}
+  },
+  {
+   "task": "semver",
+   "difficulty": "hard",
+   "results": {}
+  },
+  {
+   "task": "inventory",
+   "difficulty": "hard",
+   "results": {}
+  }
+ ]
+}
