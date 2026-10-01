@@ -2,10 +2,6 @@
 blocked_needs_human after max_review_iterations, and the pipeline still
 reaches project_status=complete instead of looping forever."""
 import json
-import sys
-import os
-
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import agents.base as base_module
 from graph.build_graph import build_graph
@@ -74,8 +70,9 @@ def fake_run(self, context: str, output_model, temperature: float = 0.2):
     raise AssertionError(f"Unexpected output_model requested: {name}")
 
 
-def main():
-    base_module.BaseAgent.run = fake_run
+def test_review_cap_bounds_the_qa_loop(monkeypatch):
+    call_counts.clear()
+    monkeypatch.setattr(base_module.BaseAgent, "run", fake_run)
 
     app = build_graph(checkpointer=None)
     initial_state = ProjectState.new(user_request="Single always-failing task.")
@@ -85,11 +82,6 @@ def main():
     )
     final_state = ProjectState.model_validate(result_dict)
 
-    print("Final project_status:", final_state.project_status)
-    print("T1 status:", final_state.get_task("T1").status)
-    print("review_iterations:", final_state.review_iterations)
-    print("ReviewReport calls made:", call_counts.get("ReviewReport"))
-
     assert final_state.get_task("T1").status == TaskStatus.blocked_needs_human
     assert final_state.review_iterations["T1"] == final_state.config.max_review_iterations
     assert call_counts["ReviewReport"] == final_state.config.max_review_iterations, (
@@ -98,9 +90,3 @@ def main():
     assert final_state.project_status == ProjectStatus.complete, (
         "pipeline must still finish (with the task left blocked) instead of hanging"
     )
-
-    print("\nALL ASSERTIONS PASSED")
-
-
-if __name__ == "__main__":
-    main()

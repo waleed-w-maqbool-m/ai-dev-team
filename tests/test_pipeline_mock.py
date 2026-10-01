@@ -7,10 +7,6 @@ fail-then-pass cycle, a two-task dependency chain, and final documentation —
 which together exercise every conditional edge in the graph.
 """
 import json
-import sys
-import os
-
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import agents.base as base_module
 from graph.build_graph import build_graph
@@ -106,22 +102,14 @@ def fake_run(self, context: str, output_model, temperature: float = 0.2):
     raise AssertionError(f"Unexpected output_model requested: {name}")
 
 
-def main():
-    base_module.BaseAgent.run = fake_run  # monkeypatch the single LLM seam
+def test_full_pipeline_happy_path(monkeypatch, isolated_workspace):
+    call_counts.clear()
+    monkeypatch.setattr(base_module.BaseAgent, "run", fake_run)  # the single LLM seam
 
     app = build_graph(checkpointer=None)
     initial_state = ProjectState.new(user_request="Build a two-step demo pipeline.")
     result_dict = app.invoke(initial_state, config={"configurable": {"thread_id": "test-1"}})
     final_state = ProjectState.model_validate(result_dict)
-
-    print("Final project_status:", final_state.project_status)
-    for t in final_state.tasks:
-        print(f"  {t.id}: {t.status.value} (reviews: {len(t.review_history)})")
-    print("clarification_rounds:", final_state.clarification_rounds)
-    print("review_iterations:", final_state.review_iterations)
-    print("final_summary:", final_state.final_summary)
-    print("message count:", len(final_state.messages))
-    print("message types in order:", [m.message_type.value for m in final_state.messages])
 
     assert final_state.project_status == ProjectStatus.complete, "project should complete"
     assert final_state.get_task("T1").status == TaskStatus.done
@@ -129,17 +117,14 @@ def main():
     assert final_state.clarification_rounds == 1, "expected exactly one clarification round"
     assert final_state.review_iterations.get("T1") == 1, "expected exactly one QA-fail on T1"
     assert final_state.documentation is not None
-    assert "T1" in final_state.final_summary or True  # summary content is model-authored, just check it's set
     assert final_state.final_summary
+    assert [m.message_type.value for m in final_state.messages] == [
+        "plan", "clarification_request", "plan",
+        "implementation", "test_report", "review",   # T1 fails QA once
+        "implementation", "test_report", "review", "status",
+        "implementation", "test_report", "review", "status",
+        "documentation",
+    ]
 
-    workspace = os.environ.get("AI_TEAM_WORKSPACE", os.path.join(os.getcwd(), "workspace"))
-    assert os.path.exists(os.path.join(workspace, "t1.py")), "SWE should have written t1.py"
-    assert os.path.exists(os.path.join(workspace, "t2.py")), "SWE should have written t2.py"
-    assert os.path.exists(os.path.join(workspace, "README.md")), "Docs agent should have appended README"
-    assert os.path.exists(os.path.join(workspace, "CHANGELOG.md")), "Docs agent should have written CHANGELOG"
-
-    print("\nALL ASSERTIONS PASSED")
-
-
-if __name__ == "__main__":
-    main()
+    for name in ["t1.py", "t2.py", "README.md", "CHANGELOG.md"]:
+        assert (isolated_workspace / name).exists(), name

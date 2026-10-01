@@ -1,0 +1,30 @@
+name: tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.12", "3.13"]
+        # docker: generated code runs in the locked-down container (and the
+        # container-isolation test runs for real); subprocess: the fallback.
+        sandbox: ["docker", "subprocess"]
+    name: py${{ matrix.python-version }} / ${{ matrix.sandbox }}
+    env:
+      AI_TEAM_SANDBOX: ${{ matrix.sandbox }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+          cache-dependency-path: requirements*.txt
+      - run: pip install -r requirements-dev.txt
+      - if: matrix.sandbox == 'docker'
+        run: docker pull python:3.12-slim
+      - run: pytest -rs
