@@ -32,6 +32,7 @@ export interface Benchmark {
   case_count: number;
   configs: BenchmarkConfig[];
   per_task: { task: string; difficulty: string; results: Record<string, string> }[];
+  suite: { task: string; title: string; difficulty: string; cases: number; request: string }[];
 }
 
 async function getJson<T>(url: string): Promise<T> {

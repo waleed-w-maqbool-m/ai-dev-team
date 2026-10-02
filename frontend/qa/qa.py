@@ -191,11 +191,11 @@ with sync_playwright() as p:
     reachable = (
         any(s.startswith("INPUT:") for s in seen)
         and (any("Run live" in s for s in seen) or not run_enabled)  # a disabled button is correctly skipped
-        and any(s.startswith("SELECT:") for s in seen)
+        and any("All runs" in s for s in seen)  # recordings are picked on the Runs page
         and any("Hold" in s for s in seen)
         and ticks_in_order == 1
     )
-    check("C5 keyboard reaches request, run, replay picker and timeline (one stop)", reachable, {"run_enabled": run_enabled, "tick_stops": ticks_in_order, "order": seen[:16]})
+    check("C5 keyboard reaches request, run, runs link and timeline (one stop)", reachable, {"run_enabled": run_enabled, "tick_stops": ticks_in_order, "order": seen[:16]})
     # Arrow keys move along the timeline.
     page.locator(".tick[tabindex='0']").focus()
     page.keyboard.press("Home")

@@ -88,7 +88,20 @@ export function App() {
     if (webgl) {
       // Fetch the 3D bundle once the first paint is done, so parsing it
       // doesn't compete with the page's own startup work.
-      const load = () => import("../scene/Stage").then((m) => setStage(() => m.default));
+      const load = () =>
+        import("../scene/Stage")
+          .then((m) => setStage(() => m.default))
+          .catch(() => {
+            // A tab opened before a deploy asks for a chunk that no longer
+            // exists; reload once to pick up the new build.
+            try {
+              if (sessionStorage.getItem("stage-reload")) return;
+              sessionStorage.setItem("stage-reload", "1");
+            } catch {
+              return;
+            }
+            window.location.reload();
+          });
       if ("requestIdleCallback" in window) window.requestIdleCallback(load, { timeout: 800 });
       else setTimeout(load, 200);
     }

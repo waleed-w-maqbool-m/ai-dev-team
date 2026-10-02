@@ -1,9 +1,6 @@
 .page .page-head { position: relative; }
-.page-head, .table-wrap, .bench-empty, .bench-sub { position: relative; }
+.page-head, .table-wrap, .bench-sub, .bench-status, .suite-list { position: relative; }
 .library__note { margin: 6px 0 0; text-transform: none; letter-spacing: 0.02em; font-size: 10.5px; }
-.bench-empty { max-width: 760px; padding: 28px; display: grid; gap: 14px; }
-.bench-empty p { margin: 0; }
-.bench-empty__title { font-size: 44px; line-height: 1; }
 .bench-big { font-family: var(--font-display); font-size: 28px; }
 .bench-sub { margin: 56px 0 12px; font-weight: 400; }
 .stage-poster {
@@ -13,3 +10,25 @@
 }
 
 @media (max-width: 760px) { .library__request { font-size: 16px; margin-bottom: 6px; } }
+
+/* Benchmark: status line + the suite itself */
+.bench-status { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin: 0 0 8px; padding: 14px 16px; max-width: 760px; color: var(--text-muted); background: rgba(10, 11, 14, 0.82); border: 1px solid var(--line); border-radius: var(--radius); }
+.suite-list { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line-strong); }
+.suite-item {
+  display: grid; grid-template-columns: 36px minmax(0, 1fr) 90px 80px; gap: 16px; align-items: baseline;
+  padding: 16px 0; border-bottom: 1px solid var(--line); background: rgba(7, 8, 10, 0.72);
+}
+.suite-item__title { margin: 0; font-size: 17px; }
+.suite-item details { margin-top: 6px; }
+.suite-item summary { cursor: pointer; font-size: 10.5px; color: var(--text-dim); width: fit-content; }
+.suite-item summary:hover { color: var(--text); }
+.suite-item__request { margin: 8px 0 0; max-width: 78ch; font-size: 14px; color: var(--text-muted); line-height: 1.6; }
+.suite-item__difficulty { justify-self: start; }
+.suite-item__difficulty--easy { color: var(--pass); border-color: rgba(124, 224, 195, 0.35); }
+.suite-item__difficulty--medium { color: var(--glow); border-color: rgba(255, 178, 122, 0.35); }
+.suite-item__difficulty--hard { color: var(--accent); border-color: rgba(255, 91, 31, 0.4); }
+.suite-item__cases { font-size: 11px; color: var(--text-muted); text-align: right; }
+@media (max-width: 760px) {
+  .suite-item { grid-template-columns: 28px minmax(0, 1fr) auto; }
+  .suite-item__cases { grid-column: 2; text-align: left; }
+}

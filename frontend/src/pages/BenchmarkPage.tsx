@@ -28,13 +28,31 @@ export function BenchmarkPage() {
       {data === null && <p className="muted">Loading…</p>}
 
       {empty && (
-        <section className="bench-empty panel page-solid" aria-label="No results yet">
-          <p className="serif bench-empty__title">Not measured yet.</p>
-          <p className="muted">
-            No benchmark runs have been recorded, so there are no numbers to show. This page fills in from real results
-            only.
-          </p>
-          <pre className="code">python -m bench.run --name llama-3.3-70b --provider groq --model llama-3.3-70b-versatile{"\n"}python -m bench.report</pre>
+        <p className="bench-status page-solid" role="status">
+          <span className="tag">Results</span> Awaiting the first benchmark run. Scores appear here once real runs have
+          been measured; nothing is estimated.
+        </p>
+      )}
+
+      {bench && bench.suite?.length > 0 && (
+        <section className="bench-suite" aria-labelledby="suite-title">
+          <h2 id="suite-title" className="mono dim bench-sub">The suite · {bench.task_count} tasks · {bench.case_count} hidden tests</h2>
+          <ol className="suite-list page-solid">
+            {bench.suite.map((t, i) => (
+              <li key={t.task} className="suite-item">
+                <span className="mono dim suite-item__n">{String(i + 1).padStart(2, "0")}</span>
+                <div className="suite-item__body">
+                  <p className="suite-item__title">{t.title}</p>
+                  <details>
+                    <summary className="mono">The exact request</summary>
+                    <p className="suite-item__request">{t.request}</p>
+                  </details>
+                </div>
+                <span className={`tag suite-item__difficulty suite-item__difficulty--${t.difficulty}`}>{t.difficulty}</span>
+                <span className="mono suite-item__cases">{t.cases} tests</span>
+              </li>
+            ))}
+          </ol>
         </section>
       )}
 

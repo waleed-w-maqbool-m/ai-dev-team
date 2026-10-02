@@ -64,5 +64,91 @@
    "difficulty": "hard",
    "results": {}
   }
+ ],
+ "suite": [
+  {
+   "task": "wordfreq",
+   "title": "Word-frequency counter CLI",
+   "difficulty": "easy",
+   "cases": 5,
+   "request": "Write a Python CLI script `wordfreq.py`. Usage: `python wordfreq.py PATH [--top N]`. It reads the UTF-8 text file at PATH and splits it into words, where a word is a maximal run of ASCII letters a-z (case-insensitive) — so apostrophes, digits and punctuation are separators. Words are lowercased. Print the N most frequent words (default 10), one per line, as `word count` separated by a single space, ordered by count descending with ties broken alphabetically. If PATH does not exist, print an error message to stderr and exit with status 1."
+  },
+  {
+   "task": "csv2json",
+   "title": "CSV to JSON converter with full CSV quoting",
+   "difficulty": "easy",
+   "cases": 5,
+   "request": "Write a Python CLI script `csv2json.py`. Usage: `python csv2json.py PATH`. It reads the CSV file at PATH, whose first row is the header, and prints to stdout a JSON array with one object per data row mapping each header name to that row's value as a string (no type conversion). It must handle standard CSV quoting, including quoted fields that contain commas, double quotes and newlines. A file that is empty or has only a header row prints `[]`. If PATH does not exist, print an error message to stderr and exit with status 1."
+  },
+  {
+   "task": "roman",
+   "title": "Roman numeral converter with strict parsing",
+   "difficulty": "easy",
+   "cases": 9,
+   "request": "Write a Python CLI script `roman.py` with two subcommands. `python roman.py to-roman N` prints the Roman numeral for the integer N, which must be between 1 and 3999, using standard subtractive notation (IV, IX, XL, XC, CD, CM). `python roman.py from-roman S` prints the integer value of the Roman numeral S, which must be uppercase and in canonical form (so IIII, IC and VX are invalid). For any invalid input — out-of-range or non-integer N, or an invalid numeral — print an error message to stderr and exit with status 2."
+  },
+  {
+   "task": "calc",
+   "title": "Arithmetic evaluator with a hand-written parser (no eval)",
+   "difficulty": "hard",
+   "cases": 9,
+   "request": "Write a Python CLI script `calc.py`, an arithmetic expression evaluator that must NOT use eval, exec, compile or the ast module. Usage: `python calc.py \"EXPR\"`. It supports non-negative integer and decimal literals, the binary operators + - * /, unary minus, and parentheses, with standard precedence and left associativity; whitespace is optional. If the result is a whole number, print it without a decimal point (e.g. `1`, `-10`); otherwise print it the way Python prints a float (e.g. `3.5`). On division by zero or a malformed expression, print an error message to stderr and exit with status 1."
+  },
+  {
+   "task": "duration",
+   "title": "Duration parser and formatter (1h30m to seconds and back)",
+   "difficulty": "medium",
+   "cases": 8,
+   "request": "Write a Python CLI script `duration.py`. `python duration.py SPEC` converts a duration such as `1h30m`, `45s`, `2d4h` or `1h 15m 10s` to a total number of seconds and prints it as an integer. Units are d (86400 s), h, m and s; each unit may appear at most once and units must appear in the order d, h, m, s; spaces between parts are allowed; units are case-insensitive. `python duration.py --format SECONDS` does the reverse: it prints the compact canonical form with no spaces, omitting zero units (5400 -> `1h30m`), and `0s` for zero. On invalid input, print an error message to stderr and exit with status 1."
+  },
+  {
+   "task": "logstats",
+   "title": "Web access-log analyzer",
+   "difficulty": "medium",
+   "cases": 2,
+   "request": "Write a Python CLI script `logstats.py`. Usage: `python logstats.py PATH`. It reads a web server access log in Common Log Format, one request per line, for example: `127.0.0.1 - - [10/Oct/2000:13:55:36 -0700] \"GET /index.html HTTP/1.0\" 200 2326`. It prints a JSON object with these keys: `total_requests` (number of valid lines), `status_counts` (object mapping each status code, as a string, to its count), `top_paths` (list of up to 3 `[path, count]` pairs, most requested first, ties broken by path ascending), `bytes_sent` (sum of the size field, where `-` counts as 0), and `malformed_lines` (number of non-blank lines that don't match the format; they are otherwise ignored)."
+  },
+  {
+   "task": "urlparts",
+   "title": "URL parser with decoded query parameters",
+   "difficulty": "medium",
+   "cases": 5,
+   "request": "Write a Python CLI script `urlparts.py`. Usage: `python urlparts.py URL`. It prints a JSON object with keys `scheme`, `host` (lowercased), `port` (an integer; if the URL has none, use 80 for http, 443 for https, and null for any other scheme), `path` (`/` if empty), `query` (object mapping each query parameter name to the list of its values in order, percent-decoded; `{}` if there is no query) and `fragment` (string, or null if absent). If the URL has no scheme or no host, print an error message to stderr and exit with status 1."
+  },
+  {
+   "task": "vigenere",
+   "title": "Vigenère cipher CLI",
+   "difficulty": "easy",
+   "cases": 4,
+   "request": "Write a Python CLI script `cipher.py` implementing the Vigenère cipher. Usage: `python cipher.py encrypt KEY TEXT` or `python cipher.py decrypt KEY TEXT`, printing the result. KEY must contain only letters (case-insensitive); otherwise print an error message to stderr and exit with status 1. Each letter of TEXT is shifted by the corresponding key letter (A/a = 0 ... Z/z = 25), preserving the letter's case. Non-letter characters are copied unchanged and do NOT advance the position in the key."
+  },
+  {
+   "task": "stats",
+   "title": "Descriptive statistics from stdin",
+   "difficulty": "easy",
+   "cases": 5,
+   "request": "Write a Python CLI script `stats.py` that reads numbers (integers or floats, separated by any whitespace including newlines) from stdin and prints exactly five lines: `count N`, `mean X`, `median X`, `min X`, `max X`, where N is an integer and each X is formatted with exactly 2 decimal places. If there are no numbers, print `error: no data` to stderr and exit with status 1. If any token is not a number, print `error: invalid number: TOKEN` to stderr and exit with status 1."
+  },
+  {
+   "task": "lru_cache",
+   "title": "LRU cache class",
+   "difficulty": "medium",
+   "cases": 4,
+   "request": "Create a Python module `lru_cache.py` defining a class `LRUCache` with: `__init__(self, capacity: int)`, raising ValueError if capacity is less than 1; `get(self, key)`, returning the stored value or None if the key is missing, where a hit makes the key the most recently used; `put(self, key, value)`, inserting or updating the key and making it the most recently used, and evicting the least recently used key when the cache would exceed its capacity; and `__len__(self)`. Do not use functools.lru_cache or any third-party library."
+  },
+  {
+   "task": "semver",
+   "title": "Semantic Versioning 2.0.0 parser and comparator",
+   "difficulty": "hard",
+   "cases": 6,
+   "request": "Create a Python module `semver.py` implementing Semantic Versioning 2.0.0 with three functions. `parse(version: str) -> tuple` returns `(major, minor, patch, prerelease)` where major/minor/patch are ints and prerelease is a tuple of identifiers (int for purely numeric identifiers, str otherwise; an empty tuple if there is no prerelease). It raises ValueError for invalid versions: the core must be MAJOR.MINOR.PATCH of non-negative integers without leading zeros, optionally followed by `-` and dot-separated prerelease identifiers ([0-9A-Za-z-]+, numeric ones without leading zeros); build metadata after `+` is allowed and ignored. `compare(a: str, b: str) -> int` returns -1, 0 or 1 using SemVer 2.0.0 precedence (a prerelease ranks below the release; identifiers compare left to right, numeric ones numerically and below alphanumeric ones, alphanumeric ones in ASCII order; if all preceding identifiers are equal, the shorter prerelease ranks lower). `max_version(versions: list[str]) -> str` returns the highest version in the list."
+  },
+  {
+   "task": "inventory",
+   "title": "Two-file inventory library and command CLI",
+   "difficulty": "hard",
+   "cases": 4,
+   "request": "Build a small inventory tool as two Python files. `inventory.py` defines a class `Inventory` with: `add(sku: str, qty: int)`, where qty must be a positive integer (otherwise raise ValueError); `remove(sku: str, qty: int)`, raising ValueError if the sku is unknown, qty is not a positive integer, or there is not enough stock, and dropping the sku entirely when its quantity reaches 0; `quantity(sku: str) -> int`, returning 0 for unknown skus; and `report() -> list[tuple[str, int]]`, returning (sku, quantity) pairs sorted by sku. `inventory_cli.py` uses that class and reads commands from stdin, one per line: `add SKU QTY`, `remove SKU QTY` or `report`. `report` prints each item as `SKU QTY`, one per line. For an unknown or malformed command, or an operation that raises, print `error: ` followed by a message to stdout and continue with the next line. Blank lines are ignored. The CLI exits with status 0 at end of input."
+  }
  ]
 }

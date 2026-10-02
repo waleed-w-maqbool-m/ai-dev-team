@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 
-import { queryParam } from "../app/router";
+import { hrefFor, navigate, queryParam } from "../app/router";
 import { api, type Health } from "../data/api";
 import { useRun } from "../data/runStore";
-import { AGENT_META, type ReplayMeta } from "../data/types";
+import { AGENT_META } from "../data/types";
 import { MagneticButton } from "../ui/Magnetic";
 import { OutputPanel } from "./OutputPanel";
 import { Timeline } from "./Timeline";
@@ -26,13 +26,8 @@ const EXAMPLE_REQUESTS = [
   "Build a dependency-graph resolver: read packages and their dependencies from a JSON file, print a valid install order, and report any cycles clearly.",
 ];
 
-function formatDate(iso: string) {
-  const d = new Date(iso);
-  return Number.isNaN(d.getTime()) ? iso : d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
-}
-
-function TopBar({ health, replays }: { health: Health; replays: ReplayMeta[] }) {
-  const { source, replay, request, startLive, loadReplay, liveStatus, error } = useRun();
+function TopBar({ health }: { health: Health }) {
+  const { source, startLive, liveStatus, error } = useRun();
   const [draft, setDraft] = useState(EXAMPLE_REQUESTS[0]);
   const busy = source === "live" && (liveStatus === "connecting" || liveStatus === "streaming");
 
@@ -63,34 +58,27 @@ function TopBar({ health, replays }: { health: Health; replays: ReplayMeta[] }) 
           {busy ? "Running…" : "Run live"}
         </MagneticButton>
       </form>
-      <div className="topbar__replay">
-        <label className="mono dim" htmlFor="replay-pick">Replay</label>
-        <select
-          id="replay-pick"
-          value={source === "replay" ? replay?.id : ""}
-          onChange={(e) => e.target.value && loadReplay(e.target.value)}
-        >
-          {source !== "replay" && <option value="">Choose a recorded run…</option>}
-          {replays.map((r) => (
-            <option key={r.id} value={r.id}>
-              {formatDate(r.recorded_at)} · {r.request.slice(0, 48)}
-            </option>
-          ))}
-        </select>
-      </div>
+      {/* Choosing a recording lives on the Runs page; here one line says
+          what's playing and links there. */}
       <p className="topbar__status mono" role="status">
-        {source === "replay" && replay && (
+        {source === "replay" && (
           <>
-            <span className="tag">Recorded run</span> {formatDate(replay.recorded_at)} · {replay.model ?? "model not recorded"} · <span className="muted">“{request}”</span>
+            <span className="tag">Recorded run</span>{" "}
+            <a
+              className="topbar__runs-link"
+              href={hrefFor("library")}
+              onClick={(e) => {
+                e.preventDefault();
+                navigate("library");
+              }}
+            >
+              All runs →
+            </a>
           </>
         )}
         {source === "live" && <><span className="tag tag--accent">Live</span> {health.provider} · {health.model} · {liveStatus}</>}
-        {source === "none" && !health.live && <span className="dim">Live runs need the local backend. Recorded runs play here.</span>}
         {error && <span className="fail"> {error}</span>}
       </p>
-      {source === "replay" && replay?.note && (
-        <p className="topbar__note mono dim" title={replay.note}>{replay.note}</p>
-      )}
     </div>
   );
 }
@@ -154,7 +142,6 @@ function LiveLog() {
 
 export function TheaterPage() {
   const [health, setHealth] = useState<Health>({ live: false });
-  const [replays, setReplays] = useState<ReplayMeta[]>([]);
   const [selected, setSelected] = useState<number | null>(null);
   const [file, setFile] = useState<string | null>(null);
   const source = useRun((s) => s.source);
@@ -163,12 +150,12 @@ export function TheaterPage() {
 
   useEffect(() => {
     api.health().then(setHealth);
+    // Plays the requested recording (from the Runs page), else the newest.
     api.replays().then((list) => {
-      setReplays(list);
       const wanted = queryParam("replay");
       const pick = list.find((r) => r.id === wanted) ?? list[0];
       if (pick && useRun.getState().source === "none") useRun.getState().loadReplay(pick.id);
-    }).catch(() => setReplays([]));
+    }).catch(() => {});
   }, []);
 
   useEffect(() => setSelected(null), [source]);
@@ -180,7 +167,7 @@ export function TheaterPage() {
     <main id="main" className="theater">
       <h1 className="sr-only">Agent Theater</h1>
       <div className="theater__left">
-        <TopBar health={health} replays={replays} />
+        <TopBar health={health} />
         <TaskStrip />
         <div className="theater__dock">
           {phase === "done" && summary && (

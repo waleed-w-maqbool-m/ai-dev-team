@@ -77,6 +77,12 @@ def benchmark_json() -> dict:
         "case_count": sum(len(t.cases) for t in TASKS),
         "configs": configs,
         "per_task": per_task,
+        # The suite itself, so the page has something real to show before
+        # (and alongside) any results.
+        "suite": [
+            {"task": t.id, "title": t.title, "difficulty": t.difficulty, "cases": len(t.cases), "request": t.request}
+            for t in TASKS
+        ],
     }
 
 

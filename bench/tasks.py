@@ -54,6 +54,7 @@ class BenchTask:
     difficulty: str  # easy | medium | hard
     request: str
     cases: list[Case]
+    title: str = ""  # short human-readable name, for reports and the web console
 
 
 def _norm(text: str) -> str:
@@ -75,6 +76,7 @@ def _py(code: str) -> list[str]:
 TASKS: list[BenchTask] = [
     BenchTask(
         id="wordfreq",
+        title="Word-frequency counter CLI",
         difficulty="easy",
         request=(
             "Write a Python CLI script `wordfreq.py`. Usage: `python wordfreq.py PATH [--top N]`. "
@@ -100,6 +102,7 @@ TASKS: list[BenchTask] = [
     ),
     BenchTask(
         id="csv2json",
+        title="CSV to JSON converter with full CSV quoting",
         difficulty="easy",
         request=(
             "Write a Python CLI script `csv2json.py`. Usage: `python csv2json.py PATH`. It reads the CSV "
@@ -123,6 +126,7 @@ TASKS: list[BenchTask] = [
     ),
     BenchTask(
         id="roman",
+        title="Roman numeral converter with strict parsing",
         difficulty="easy",
         request=(
             "Write a Python CLI script `roman.py` with two subcommands. `python roman.py to-roman N` "
@@ -146,6 +150,7 @@ TASKS: list[BenchTask] = [
     ),
     BenchTask(
         id="calc",
+        title="Arithmetic evaluator with a hand-written parser (no eval)",
         difficulty="hard",
         request=(
             "Write a Python CLI script `calc.py`, an arithmetic expression evaluator that must NOT use "
@@ -170,6 +175,7 @@ TASKS: list[BenchTask] = [
     ),
     BenchTask(
         id="duration",
+        title="Duration parser and formatter (1h30m to seconds and back)",
         difficulty="medium",
         request=(
             "Write a Python CLI script `duration.py`. `python duration.py SPEC` converts a duration such "
@@ -193,6 +199,7 @@ TASKS: list[BenchTask] = [
     ),
     BenchTask(
         id="logstats",
+        title="Web access-log analyzer",
         difficulty="medium",
         request=(
             "Write a Python CLI script `logstats.py`. Usage: `python logstats.py PATH`. It reads a web "
@@ -233,6 +240,7 @@ TASKS: list[BenchTask] = [
     ),
     BenchTask(
         id="urlparts",
+        title="URL parser with decoded query parameters",
         difficulty="medium",
         request=(
             "Write a Python CLI script `urlparts.py`. Usage: `python urlparts.py URL`. It prints a JSON "
@@ -260,6 +268,7 @@ TASKS: list[BenchTask] = [
     ),
     BenchTask(
         id="vigenere",
+        title="Vigenère cipher CLI",
         difficulty="easy",
         request=(
             "Write a Python CLI script `cipher.py` implementing the Vigenère cipher. Usage: "
@@ -278,6 +287,7 @@ TASKS: list[BenchTask] = [
     ),
     BenchTask(
         id="stats",
+        title="Descriptive statistics from stdin",
         difficulty="easy",
         request=(
             "Write a Python CLI script `stats.py` that reads numbers (integers or floats, separated by "
@@ -300,6 +310,7 @@ TASKS: list[BenchTask] = [
     ),
     BenchTask(
         id="lru_cache",
+        title="LRU cache class",
         difficulty="medium",
         request=(
             "Create a Python module `lru_cache.py` defining a class `LRUCache` with: "
@@ -330,6 +341,7 @@ TASKS: list[BenchTask] = [
     ),
     BenchTask(
         id="semver",
+        title="Semantic Versioning 2.0.0 parser and comparator",
         difficulty="hard",
         request=(
             "Create a Python module `semver.py` implementing Semantic Versioning 2.0.0 with three "
@@ -371,6 +383,7 @@ TASKS: list[BenchTask] = [
     ),
     BenchTask(
         id="inventory",
+        title="Two-file inventory library and command CLI",
         difficulty="hard",
         request=(
             "Build a small inventory tool as two Python files. `inventory.py` defines a class "

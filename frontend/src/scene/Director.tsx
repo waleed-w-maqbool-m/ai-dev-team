@@ -52,11 +52,12 @@ function shots(mobile: boolean) {
         proof: { pos: [0, 6.2, 17], look: [0, 4.4, 0] } as Shot,
         dive: { pos: [0, 3.4, 7.6], look: [0, 0.6, -0.6] } as Shot,
         page: { pos: [0, 8.5, 17], look: [0, 0.8, 0] } as Shot,
-        // Theater: aim right of the action so it centres in the space left of
-        // the docked output panel.
-        theater: { pos: [1.4, 5.6, 12.4], look: [1.9, 0.55, -0.2] } as Shot,
+        // Theater shots aim straight at the action; the projection itself is
+        // shifted (see THEATER_PANEL below) to centre it left of the panel.
+        // Far enough back that all five stations fit in the area left of the panel.
+        theater: { pos: [0, 7.8, 17.8], look: [0, 0.5, -0.4] } as Shot,
         focus,
-        theaterFocus: (a: AgentId): Shot => ({ pos: add(pos[a], [1.6, 2.6, 7.2]), look: add(pos[a], [1.7, 0.8, 0]) }),
+        theaterFocus: (a: AgentId): Shot => ({ pos: add(pos[a], [0, 2.6, 7.2]), look: add(pos[a], [0, 0.8, 0]) }),
       };
 }
 
@@ -93,8 +94,14 @@ function sampleKeys(keys: [number, Shot][], t: number, outPos: THREE.Vector3, ou
   outLook.set(...last.look);
 }
 
+/** Width of the Theater's docked output panel plus its gap (theater.css:
+ * 420px column + 16px gap) — the stage is centred in the space left of it. */
+const THEATER_PANEL = 436;
+
 export function Director({ rig }: { rig: RefObject<THREE.Group | null> }) {
-  const camera = useThree((s) => s.camera);
+  const camera = useThree((s) => s.camera) as THREE.PerspectiveCamera;
+  const size = useThree((s) => s.size);
+  const viewShift = useRef(0);
   const look = useRef(new THREE.Vector3(0, 1, 0));
   const targetPos = useRef(new THREE.Vector3());
   const targetLook = useRef(new THREE.Vector3());
@@ -173,6 +180,18 @@ export function Director({ rig }: { rig: RefObject<THREE.Group | null> }) {
       stage.warmth[a] = THREE.MathUtils.damp(stage.warmth[a], stage.warmthTarget[a], 1.5, dt);
     }
     stage.dim = THREE.MathUtils.damp(stage.dim, stage.dimTarget, 3, dt);
+
+    // Shift the projection centre (not the aim) so the Theater's action sits
+    // in the middle of the free area left of the output panel at any width.
+    // On narrow screens the panel moves below the stage, so no shift.
+    const wantShift = sceneSignals.mode === "theater" && size.width > 1100 ? THEATER_PANEL / 2 : 0;
+    const prevShift = viewShift.current;
+    viewShift.current = reduced ? wantShift : THREE.MathUtils.damp(viewShift.current, wantShift, 4, dt);
+    if (Math.abs(viewShift.current) < 0.5 && wantShift === 0) {
+      if (camera.view?.enabled) camera.clearViewOffset();
+    } else if (Math.abs(viewShift.current - prevShift) > 0.01 || !camera.view?.enabled || camera.view.fullWidth !== size.width || camera.view.fullHeight !== size.height) {
+      camera.setViewOffset(size.width, size.height, viewShift.current, 0, size.width, size.height);
+    }
 
     easing.damp3(camera.position, targetPos.current, smoothTime, dt);
     easing.damp3(look.current, targetLook.current, smoothTime, dt);

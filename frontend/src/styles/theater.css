@@ -18,7 +18,7 @@
 
 /* top bar */
 .topbar {
-  display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 16px; padding: 10px;
+  display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px 16px; padding: 10px;
 }
 .topbar__form { display: flex; gap: 10px; min-width: 0; }
 .topbar__input {
@@ -27,14 +27,9 @@
   border: 1px solid var(--line);
 }
 .topbar__input:focus { outline: none; border-color: var(--accent); }
-.topbar__replay { display: flex; align-items: center; gap: 10px; min-width: 0; }
-.topbar__replay select {
-  height: 40px; max-width: 280px; padding: 0 10px; font: inherit; font-size: 13px; color: var(--text);
-  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
-}
-.topbar__status, .topbar__note {
+.topbar__status {
   grid-column: 1 / -1; margin: 0; text-transform: none; letter-spacing: 0.02em; min-width: 0;
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; /* one line each; full note on hover */
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .topbar__status { color: var(--text-muted); }
 
@@ -133,9 +128,10 @@
   .theater { inset: 56px var(--gutter) 52px; gap: 8px; }
   .topbar { grid-template-columns: minmax(0, 1fr); padding: 8px; }
   .topbar__form { min-width: 0; }
-  .topbar__replay select { min-width: 0; width: 100%; max-width: none; flex: 1; }
-  .topbar__note { display: none; } /* shown in full in the Runs library */
   .taskstrip { flex-wrap: nowrap; overflow-x: auto; }
   .taskchip { flex: none; }
   .timeline__count { display: none; }
 }
+
+.topbar__runs-link { color: var(--text-muted); text-decoration: none; margin-left: 6px; }
+.topbar__runs-link:hover { color: var(--accent); }
